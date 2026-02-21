@@ -25,7 +25,7 @@ public:
 
     ~recentfiles() override;
     QListWidget *getListWidget();
-    void addFiletoList(QString filePath);
+    void addFiletoList(const QString& filePath);
 
 private:
     Ui::recentfiles *ui;
