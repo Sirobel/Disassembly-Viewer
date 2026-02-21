@@ -9,15 +9,28 @@
 #include <iostream>
 
 #include "ui_textviewer.h"
+#include "x86_64elf.h"
+#include <QMessageBox>
 
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer) {
     ui->setupUi(this);
-
 }
 
 void textviewer::openFile(const QString &filePath) {
+    if (filePath.isEmpty()) {
+        return;
+    }
+    ui->textBrowser->clear();
+
     std::cout << "Open File: " << filePath.toStdString() << std::endl;
+    try {
+        elf = std::make_unique<x86_64elf>(filePath.toStdString());
+        for (const auto &name: elf->getSectionHeadersNames())
+            ui->textBrowser->append(QString::fromStdString(name));
+    } catch (std::runtime_error &e) {
+        QMessageBox::critical(this, tr("Error"), e.what());
+    }
 }
 
 textviewer::~textviewer() {

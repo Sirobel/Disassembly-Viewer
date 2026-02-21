@@ -24,8 +24,13 @@ add_executable(Disassembly-Viewer src/main.cpp
         gui/startwindow/recentfiles.cpp
         gui/startwindow/recentfiles.h
         gui/startwindow/recentfiles.ui
+        src/ElfHandler.h
+        src/x86_64elf.cpp
+        src/x86_64elf.h
 )
-target_include_directories(Disassembly-Viewer PRIVATE ${CMAKE_SOURCE_DIR}/gui)
+target_include_directories(Disassembly-Viewer PRIVATE
+        ${CMAKE_SOURCE_DIR}/gui
+        ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(Disassembly-Viewer
         Qt::Core
         Qt::Gui

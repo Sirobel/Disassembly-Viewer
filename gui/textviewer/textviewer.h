@@ -6,6 +6,7 @@
 #define DISASSEMBLY_VIEWER_TEXTVIEWER_H
 
 #include <QWidget>
+#include <ElfHandler.h>
 
 
 QT_BEGIN_NAMESPACE
@@ -28,6 +29,7 @@ public:
 
 private:
     Ui::textviewer *ui;
+    std::unique_ptr<ElfHandler> elf;
 };
 
 

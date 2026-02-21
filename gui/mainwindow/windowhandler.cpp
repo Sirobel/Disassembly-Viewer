@@ -31,9 +31,6 @@ windowhandler::windowhandler(QWidget *parent) : QMainWindow(parent), ui(new Ui::
 
     connect(recentFiles->getListWidget(), &QListWidget::itemClicked, this, &windowhandler::openRecentFile);
 
-    stack->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    setMinimumSize(stack->currentWidget()->minimumSize());
-    resize(stack->currentWidget()->sizeHint());
 }
 
 windowhandler::~windowhandler() {
@@ -76,7 +73,7 @@ void windowhandler::updateMenubar(const int index) {
 }
 
 void windowhandler::openRecentFile(QListWidgetItem *item) {
-    QString path = item->text();
+    const QString path = item->text();
     recentFiles->addFiletoList(path);
     stack->setCurrentWidget(textViewer);
     textViewer->openFile(path);
