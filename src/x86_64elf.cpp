@@ -88,16 +88,12 @@ x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
     }
 
     //stringTable
-    if (sectionHeaders[eHdr->e_shstrndx].sh_type != SHT_STRTAB) {
-        handeFileError("Wrong entry for e_shstrndx");
-    }
+    createStringTables();
+    stringTable = stringTables[eHdr->e_shstrndx];
+    createSymbolTables();
 
-    stringTable.resize(sectionHeaders[eHdr->e_shstrndx].sh_size);
-    currentFile.seekg(static_cast<long>(sectionHeaders[eHdr->e_shstrndx].sh_offset), std::ios::beg);
-    currentFile.read(stringTable.data(), static_cast<long>(sectionHeaders[eHdr->e_shstrndx].sh_size));
-
-    if (!currentFile.good())  {
-        handeFileError("Could not read stringTable headers");
+    for (auto &[key,value] : symbolAddressTable) {
+        std::cout << "address "<< key << ": " << value << std::endl;
     }
 }
 
@@ -109,6 +105,73 @@ void x86_64elf::handeFileError(const std::string &errMsg) {
     throw std::runtime_error(errMsg);
 }
 
+void x86_64elf::createStringTables() {
+    for (int i = 0; i < eHdr->e_shnum; ++i) {
+        if (sectionHeaders[i].sh_type == SHT_STRTAB) {
+            std::vector<char> strTable;
+            strTable.resize(sectionHeaders[i].sh_size);
+
+            currentFile.seekg(static_cast<long>(sectionHeaders[i].sh_offset), std::ios::beg);
+            currentFile.read(strTable.data(), static_cast<long>(sectionHeaders[i].sh_size));
+
+            if (!currentFile.good()) {
+                handeFileError("Could not read string table");
+            }
+            stringTables[i] = strTable;
+        }
+    }
+}
+
+void x86_64elf::createSymbolTables() {
+    for (int i = 0; i < eHdr->e_shnum; ++i) {
+        if (sectionHeaders[i].sh_type == SHT_SYMTAB || sectionHeaders[i].sh_type == SHT_DYNSYM) {
+            std::vector<Elf64_Sym> symbols;
+            symbols.resize(sectionHeaders[i].sh_size / sizeof(Elf64_Sym));
+
+            currentFile.seekg(static_cast<long>(sectionHeaders[i].sh_offset), std::ios::beg);
+            currentFile.read(reinterpret_cast<std::istream::char_type *>(symbols.data()),
+                             static_cast<long>(sectionHeaders[i].sh_size));
+            if (!currentFile.good()) {
+                handeFileError("Could not read symbols");
+            }
+
+            symbolTables[i] = symbols;
+            for (const auto &symbol: symbols) {
+                if (symbol.st_shndx == SHN_UNDEF)
+                    continue;
+
+                if (const auto type = ELF64_ST_TYPE(symbol.st_info);
+                    type != STT_FUNC && type != STT_OBJECT && type != STT_NOTYPE)
+                    continue;
+
+                if (symbol.st_value == 0 && symbol.st_shndx != SHN_ABS)
+                    continue;
+
+                symbolAddressTable[symbol.st_value] = std::string(&stringTables[sectionHeaders[i].sh_link][symbol.st_name]);
+            }
+        } else if (sectionHeaders[i].sh_type == SHT_RELA) {
+            std::vector<Elf64_Rela> relocations(sectionHeaders[i].sh_size / sizeof(Elf64_Rela));
+
+            currentFile.seekg(static_cast<long>(sectionHeaders[i].sh_offset), std::ios::beg);
+            currentFile.read(reinterpret_cast<std::istream::char_type *>(relocations.data()),
+                             static_cast<long>(sectionHeaders[i].sh_size));
+            if (!currentFile.good()) {
+                handeFileError("Could not read relocations");
+            }
+
+            for (const auto &relocation: relocations) {
+                const uint32_t symIndex = ELF64_R_SYM(relocation.r_info);
+
+                const auto syms = symbolTables[sectionHeaders[i].sh_link][symIndex];
+                const uint32_t symtabIndex = sectionHeaders[i].sh_link;
+                uint32_t strtabIndex = sectionHeaders[symtabIndex].sh_link;
+
+                symbolAddressTable[relocation.r_offset] = std::string(&stringTables[strtabIndex][syms.st_name]);
+            }
+        }
+    }
+}
+
 x86_64elf::~x86_64elf() = default;
 
 std::vector<std::string> x86_64elf::getSectionHeadersNames() {
@@ -118,4 +181,23 @@ std::vector<std::string> x86_64elf::getSectionHeadersNames() {
         names.emplace_back(&stringTable[header.sh_name]);
     }
     return names;
+}
+
+std::vector<uint8_t> x86_64elf::getSection(const std::string &sectionName) {
+    std::vector<uint8_t> data;
+
+    for (const auto &header: sectionHeaders) {
+        if (std::strcmp(&stringTable[header.sh_name], sectionName.c_str()) == 0) {
+            data.resize(header.sh_size);
+            currentFile.seekg(static_cast<long>(header.sh_offset), std::ios::beg);
+            currentFile.read(reinterpret_cast<std::istream::char_type *>(data.data()),
+                             static_cast<long>(header.sh_size));
+        }
+    }
+
+    return data;
+}
+
+std::string x86_64elf::lookupSymbol(uint64_t addr) {
+    return symbolAddressTable[addr];
 }

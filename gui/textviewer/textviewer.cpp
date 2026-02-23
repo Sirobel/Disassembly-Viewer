@@ -26,8 +26,11 @@ void textviewer::openFile(const QString &filePath) {
     std::cout << "Open File: " << filePath.toStdString() << std::endl;
     try {
         elf = std::make_unique<x86_64elf>(filePath.toStdString());
-        for (const auto &name: elf->getSectionHeadersNames())
-            ui->textBrowser->append(QString::fromStdString(name));
+
+        std::vector<uint8_t> data = elf->getSection(".text");
+        QByteArray arr(reinterpret_cast<const char *>(data.data()), data.size());
+        QString s = arr.toHex(' ');
+        ui->textBrowser->setText(s);
     } catch (std::runtime_error &e) {
         QMessageBox::critical(this, tr("Error"), e.what());
     }

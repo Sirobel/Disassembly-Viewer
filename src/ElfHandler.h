@@ -23,9 +23,16 @@ public:
         return {};
     }
 
+    virtual std::vector<uint8_t> getSection(const std::string &sectionName) {
+        return {};
+    }
+
+    virtual std::string lookupSymbol(uint64_t addr) {
+        return "";
+    }
+
 private:
     std::string filePath;
-
 };
 
 

@@ -30,6 +30,7 @@ public:
 private:
     Ui::textviewer *ui;
     std::unique_ptr<ElfHandler> elf;
+    std::vector<QString> sectionHeaders;
 };
 
 

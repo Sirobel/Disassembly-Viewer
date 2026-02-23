@@ -23,7 +23,7 @@ windowhandler::windowhandler(QWidget *parent) : QMainWindow(parent), ui(new Ui::
     stack->addWidget(recentFiles);
     stack->addWidget(textViewer);
 
-    setCentralWidget(stack);
+    ui->verticalLayout_2->addWidget(stack);
 
     connect(stack, &QStackedWidget::currentChanged, this, &windowhandler::updateMenubar);
     stack->setCurrentWidget(recentFiles);
