@@ -25,6 +25,7 @@ private:
     std::unordered_map<uint32_t, std::vector<char> > stringTables;
     std::unordered_map<uint32_t, std::vector<Elf64_Sym> > symbolTables;
     std::unordered_map<uint64_t, std::string> symbolAddressTable;
+    std::unordered_map<std::string, Elf64_Shdr> segmentsIndex;
     std::mutex fileMutex;
 
     void handeFileError(const std::string &errMsg);

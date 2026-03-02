@@ -7,6 +7,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <ranges>
 #include <vector>
 
 x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
@@ -95,6 +96,10 @@ x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
     for (auto &[key,value]: symbolAddressTable) {
         std::cout << "address " << key << ": " << value << std::endl;
     }
+
+    for (const auto &segment: sectionHeaders) {
+        segmentsIndex[&stringTable[segment.sh_name]] = segment;
+    }
 }
 
 void x86_64elf::handeFileError(const std::string &errMsg) {
@@ -177,8 +182,8 @@ x86_64elf::~x86_64elf() = default;
 std::vector<std::string> x86_64elf::getSectionHeadersNames() {
     std::vector<std::string> names;
 
-    for (const auto &header: sectionHeaders) {
-        names.emplace_back(&stringTable[header.sh_name]);
+    for (const auto &k: segmentsIndex | std::views::keys) {
+        names.emplace_back(k);
     }
     return names;
 }
@@ -186,16 +191,17 @@ std::vector<std::string> x86_64elf::getSectionHeadersNames() {
 std::vector<uint8_t> x86_64elf::getSection(const std::string &sectionName) {
     std::vector<uint8_t> data;
 
-    for (const auto &header: sectionHeaders) {
-        if (std::strcmp(&stringTable[header.sh_name], sectionName.c_str()) == 0) {
-            data.resize(header.sh_size);
-            std::lock_guard<std::mutex> lock(fileMutex);
-            currentFile.seekg(static_cast<long>(header.sh_offset), std::ios::beg);
-            currentFile.read(reinterpret_cast<std::istream::char_type *>(data.data()),
-                             static_cast<long>(header.sh_size));
-            break;
-        }
-    }
+    const auto hit = segmentsIndex.find(sectionName);
+    if (hit == segmentsIndex.end())
+        return data;
+
+    const auto header = hit->second;
+
+    data.resize(header.sh_size);
+    std::lock_guard<std::mutex> lock(fileMutex);
+    currentFile.seekg(static_cast<long>(header.sh_offset), std::ios::beg);
+    currentFile.read(reinterpret_cast<std::istream::char_type *>(data.data()),
+                     static_cast<long>(header.sh_size));
 
     return data;
 }
@@ -206,11 +212,9 @@ std::string x86_64elf::lookupSymbol(uint64_t addr) {
 }
 
 uint64_t x86_64elf::getAddressOfSegment(const std::string &segmentName) {
-    for (const auto &header: sectionHeaders) {
-        if (std::strcmp(&stringTable[header.sh_name], segmentName.c_str()) == 0) {
-            return header.sh_addr;
-        }
-    }
+    const auto hit = segmentsIndex.find(segmentName);
+    if (hit == segmentsIndex.end())
+        return 0;
 
-    return 0;
+    return hit->second.sh_addr;
 }
