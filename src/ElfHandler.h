@@ -31,6 +31,10 @@ public:
         return "";
     }
 
+    virtual uint64_t getAddressOfSegment(const std::string &segmentName) {
+        return 0;
+    }
+
 private:
     std::string filePath;
 };

@@ -92,8 +92,8 @@ x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
     stringTable = stringTables[eHdr->e_shstrndx];
     createSymbolTables();
 
-    for (auto &[key,value] : symbolAddressTable) {
-        std::cout << "address "<< key << ": " << value << std::endl;
+    for (auto &[key,value]: symbolAddressTable) {
+        std::cout << "address " << key << ": " << value << std::endl;
     }
 }
 
@@ -147,7 +147,8 @@ void x86_64elf::createSymbolTables() {
                 if (symbol.st_value == 0 && symbol.st_shndx != SHN_ABS)
                     continue;
 
-                symbolAddressTable[symbol.st_value] = std::string(&stringTables[sectionHeaders[i].sh_link][symbol.st_name]);
+                symbolAddressTable[symbol.st_value] = std::string(
+                    &stringTables[sectionHeaders[i].sh_link][symbol.st_name]);
             }
         } else if (sectionHeaders[i].sh_type == SHT_RELA) {
             std::vector<Elf64_Rela> relocations(sectionHeaders[i].sh_size / sizeof(Elf64_Rela));
@@ -163,8 +164,7 @@ void x86_64elf::createSymbolTables() {
                 const uint32_t symIndex = ELF64_R_SYM(relocation.r_info);
 
                 const auto syms = symbolTables[sectionHeaders[i].sh_link][symIndex];
-                const uint32_t symtabIndex = sectionHeaders[i].sh_link;
-                uint32_t strtabIndex = sectionHeaders[symtabIndex].sh_link;
+                uint32_t strtabIndex = sectionHeaders[sectionHeaders[i].sh_link].sh_link;
 
                 symbolAddressTable[relocation.r_offset] = std::string(&stringTables[strtabIndex][syms.st_name]);
             }
@@ -189,9 +189,11 @@ std::vector<uint8_t> x86_64elf::getSection(const std::string &sectionName) {
     for (const auto &header: sectionHeaders) {
         if (std::strcmp(&stringTable[header.sh_name], sectionName.c_str()) == 0) {
             data.resize(header.sh_size);
+            std::lock_guard<std::mutex> lock(fileMutex);
             currentFile.seekg(static_cast<long>(header.sh_offset), std::ios::beg);
             currentFile.read(reinterpret_cast<std::istream::char_type *>(data.data()),
                              static_cast<long>(header.sh_size));
+            break;
         }
     }
 
@@ -199,5 +201,16 @@ std::vector<uint8_t> x86_64elf::getSection(const std::string &sectionName) {
 }
 
 std::string x86_64elf::lookupSymbol(uint64_t addr) {
-    return symbolAddressTable[addr];
+    const auto symbol = symbolAddressTable.find(addr);
+    return symbol != symbolAddressTable.end() ? symbol->second : "";
+}
+
+uint64_t x86_64elf::getAddressOfSegment(const std::string &segmentName) {
+    for (const auto &header: sectionHeaders) {
+        if (std::strcmp(&stringTable[header.sh_name], segmentName.c_str()) == 0) {
+            return header.sh_addr;
+        }
+    }
+
+    return 0;
 }

@@ -13,6 +13,8 @@ find_package(Qt6 COMPONENTS
         Gui
         Widgets
         REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CAPSTONE REQUIRED capstone)
 
 add_executable(Disassembly-Viewer src/main.cpp
         gui/mainwindow/windowhandler.cpp
@@ -27,12 +29,17 @@ add_executable(Disassembly-Viewer src/main.cpp
         src/ElfHandler.h
         src/x86_64elf.cpp
         src/x86_64elf.h
+        src/Disassembler.h
+        src/x86_64Disasm.cpp
+        src/x86_64Disasm.h
 )
 target_include_directories(Disassembly-Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/gui
-        ${CMAKE_SOURCE_DIR}/src)
+        ${CMAKE_SOURCE_DIR}/src
+        ${CAPSTONE_INCLUDE_DIRS})
 target_link_libraries(Disassembly-Viewer
         Qt::Core
         Qt::Gui
         Qt::Widgets
+        capstone
 )
