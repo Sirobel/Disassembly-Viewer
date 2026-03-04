@@ -27,6 +27,9 @@ public:
 
     ~textviewer() override;
 
+private slots:
+    void on_textBrowser_anchorClicked(const QUrl &arg1);
+
 private:
     Ui::textviewer *ui;
     std::unique_ptr<ElfHandler> elf;

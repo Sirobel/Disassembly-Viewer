@@ -16,6 +16,7 @@
 #include <chrono>
 #include <future>
 #include <semaphore>
+#include <QDesktopServices>
 
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer) {
@@ -68,8 +69,8 @@ void textviewer::openFile(const QString &filePath) {
             text += QString::fromStdString(f.get()) + "\n";
         }
 
-
-        ui->textBrowser->setText(text);
+        //text = "<p><a href =\"https://alligatoah.de/\">test</a></p>"+text;
+        ui->textBrowser->setHtml(text);
         const std::chrono::duration<double, std::milli> ms = clock::now() - start;
         std::cout << "Elapsed time to disassemble " << ": " << ms.count() << " ms\n";
     } catch (std::runtime_error &e) {
@@ -79,4 +80,21 @@ void textviewer::openFile(const QString &filePath) {
 
 textviewer::~textviewer() {
     delete ui;
+}
+
+void textviewer::on_textBrowser_anchorClicked(const QUrl &arg1) {
+    if (!arg1.isRelative()) {
+        QDesktopServices::openUrl(arg1);
+        return;
+    }
+
+    auto pos = arg1.path();
+    std::cout << "clicked " << pos.toStdString() << std::endl;
+    QTextCursor cursor = ui->textBrowser->document()->find(pos + ":");
+
+    if (!cursor.isNull()) {
+        std::cout << "jumped to" <<  pos.toStdString() << std::endl;
+        ui->textBrowser->setTextCursor(cursor);
+        ui->textBrowser->ensureCursorVisible();
+    }
 }
