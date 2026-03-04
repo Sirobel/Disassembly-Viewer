@@ -27,6 +27,9 @@ public:
         return {};
     }
 
+    virtual std::string lookupRangeSymbol(uint64_t addr) {
+        return "";
+    }
     virtual std::string lookupSymbol(uint64_t addr) {
         return "";
     }

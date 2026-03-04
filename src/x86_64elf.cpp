@@ -9,6 +9,9 @@
 #include <memory>
 #include <ranges>
 #include <vector>
+#include <string>
+#include <format>
+#include <qguiapplication_platform.h>
 
 x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
     currentFile.open(path);
@@ -94,7 +97,7 @@ x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
     createSymbolTables();
 
     for (auto &[key,value]: symbolAddressTable) {
-        std::cout << "address " << key << ": " << value << std::endl;
+        //std::cout << "address 0x" << std::hex << key << ": " << value << std::endl;
     }
 
     for (const auto &segment: sectionHeaders) {
@@ -167,9 +170,11 @@ void x86_64elf::createSymbolTables() {
 
             for (const auto &relocation: relocations) {
                 const uint32_t symIndex = ELF64_R_SYM(relocation.r_info);
+                const uint32_t type = ELF64_R_TYPE(relocation.r_info);
 
                 const auto syms = symbolTables[sectionHeaders[i].sh_link][symIndex];
                 uint32_t strtabIndex = sectionHeaders[sectionHeaders[i].sh_link].sh_link;
+
 
                 symbolAddressTable[relocation.r_offset] = std::string(&stringTables[strtabIndex][syms.st_name]);
             }
@@ -202,13 +207,21 @@ std::vector<uint8_t> x86_64elf::getSection(const std::string &sectionName) {
     currentFile.seekg(static_cast<long>(header.sh_offset), std::ios::beg);
     currentFile.read(reinterpret_cast<std::istream::char_type *>(data.data()),
                      static_cast<long>(header.sh_size));
-
     return data;
 }
 
-std::string x86_64elf::lookupSymbol(uint64_t addr) {
-    const auto symbol = symbolAddressTable.find(addr);
-    return symbol != symbolAddressTable.end() ? symbol->second : "";
+std::string x86_64elf::lookupRangeSymbol(const uint64_t addr) {
+    auto symbol = symbolAddressTable.upper_bound(addr);
+    if (symbol == symbolAddressTable.begin())
+        return "";
+
+    --symbol;
+
+    const uint64_t offset = addr - symbol->first;
+    if (offset == 0)
+        return symbol->second;
+
+    return symbol->second + "+0x" + std::format("{:x}", offset);
 }
 
 uint64_t x86_64elf::getAddressOfSegment(const std::string &segmentName) {
@@ -217,4 +230,9 @@ uint64_t x86_64elf::getAddressOfSegment(const std::string &segmentName) {
         return 0;
 
     return hit->second.sh_addr;
+}
+
+std::string x86_64elf::lookupSymbol(const uint64_t addr) {
+    const auto symbol = symbolAddressTable.find(addr);
+    return symbol != symbolAddressTable.end() ? symbol->second : "";
 }

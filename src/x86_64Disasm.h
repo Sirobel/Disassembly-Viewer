@@ -9,10 +9,9 @@
 
 class x86_64Disasm : public Disassembler{
 public:
-    explicit x86_64Disasm(const ElfHandler &elfHandler)
+    explicit x86_64Disasm(ElfHandler &elfHandler)
         : Disassembler(elfHandler) {
     }
-
 
     std::string disassemblePart(const std::vector<uint8_t> &machineCode, uint64_t startingAddress) override;
 

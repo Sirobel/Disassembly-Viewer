@@ -12,8 +12,7 @@ class Disassembler {
 public:
     virtual ~Disassembler() = default;
 
-    explicit Disassembler(const ElfHandler &elfHandler) : elf(elfHandler) {
-    }
+    explicit Disassembler(ElfHandler &elfHandler) : elf(elfHandler) {}
 
     virtual std::string disassemblePart(const std::vector<uint8_t> &machineCode, uint64_t startingAddress) {
         return "";
@@ -21,8 +20,8 @@ public:
 
 
 
-private:
-    ElfHandler elf;
+protected:
+    ElfHandler &elf;
 };
 
 

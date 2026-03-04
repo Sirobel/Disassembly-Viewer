@@ -39,21 +39,33 @@ void textviewer::openFile(const QString &filePath) {
         QString text;
 
         std::vector<std::string> sections = {".init", ".plt", ".plt.got", ".plt.sec", ".text", ".fini"};
+        //sections = {".plt.got"};
         std::vector<std::future<std::string> > futures;
         std::counting_semaphore<4> sem(4);
+        std::cout << elf->lookupRangeSymbol(0xa000) << std::endl;
 
         for (const std::string &sec: sections) {
             sem.acquire();
             futures.push_back(std::async(std::launch::async, [&sem, this, &disassembler, sec] {
-                auto data = elf->getSection(sec);
-                auto ret = disassembler.disassemblePart(data, elf->getAddressOfSegment(sec));
-                sem.release();
+                struct Releaser {
+                    std::counting_semaphore<4> &s;
+
+                    explicit Releaser(std::counting_semaphore<4> &sem) : s(sem) {
+                    }
+
+                    ~Releaser() { s.release(); }
+                } releaser(sem);
+
+                auto data = this->elf->getSection(sec);
+                auto ret = disassembler.disassemblePart(data, this->elf->getAddressOfSegment(sec));
                 return ret;
             }));
         }
 
+        int index = 0;
         for (auto &f: futures) {
-            text += QString::fromStdString(f.get());
+            text += "Disassembly of section " + sections[index++] + "\n";
+            text += QString::fromStdString(f.get()) + "\n";
         }
 
 

@@ -21,13 +21,50 @@ std::string x86_64Disasm::disassemblePart(const std::vector<uint8_t> &machineCod
     for (size_t i = 0; i < count; i++) {
         cs_detail *detail = insn[i].detail;
         std::ostringstream oss;
+        bool hasJCOperation = false;
 
-        oss <<std::right<<std::setw(6) << std::setfill('0') << std::hex << insn[i].address << ":    ";
+        if (cs_insn_group(handle, &insn[i], CS_GRP_JUMP) || cs_insn_group(handle, &insn[i], CS_GRP_CALL)) {
+            hasJCOperation = true;
+        }
+
+        if (auto sectionName = elf.lookupSymbol(insn[i].address); !sectionName.empty()) {
+            oss << "<"<<sectionName << ">"<<std::endl;
+        }
+
+
+        oss << std::right << std::setw(6) << std::setfill('0') << std::hex << insn[i].address << ":    ";
         std::ostringstream bytes;
         for (int j = 0; j < insn[i].size; ++j) {
             bytes << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(insn[i].bytes[j]) << " ";
         }
+
+
         oss << std::left << std::setfill(' ') << std::setw(12) << insn[i].mnemonic << std::setw(12) << insn[i].op_str;
+        if (hasJCOperation)
+            oss << "\t#target ";
+
+        for (int j = 0; j < detail->x86.op_count; j++) {
+            const auto &op = detail->x86.operands[j];
+
+            if (op.type == X86_OP_MEM && op.mem.base == X86_REG_RIP) {
+                if (!hasJCOperation)
+                    oss << "\t#target ";
+                uint64_t targetAddress = insn[i].address + insn[i].size + op.mem.disp;
+                oss << std::hex << targetAddress << " <" << elf.lookupRangeSymbol(targetAddress) << ">";
+            }
+            if (hasJCOperation) {
+                if (op.type == X86_OP_IMM) {
+                    oss << "<" << elf.lookupRangeSymbol(op.imm) << ">";
+                    break;
+                }
+                if (op.type == X86_OP_REG) {
+                    oss << cs_reg_name(handle, op.reg);
+                    break;
+                }
+            }
+        }
+
+
         oss << std::endl;
         out += oss.str();
     }
