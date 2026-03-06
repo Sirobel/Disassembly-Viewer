@@ -17,7 +17,7 @@
 #include <future>
 #include <semaphore>
 #include <QDesktopServices>
-
+#include <QToolTip>
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer) {
     ui->setupUi(this);
@@ -32,7 +32,9 @@ void textviewer::openFile(const QString &filePath) {
 
     std::cout << "Open File: " << filePath.toStdString() << std::endl;
     try {
-        const auto start = std::chrono::high_resolution_clock::now();
+        auto start = std::chrono::high_resolution_clock::now();
+        auto elepasedTime = 0.0;
+
         elf = std::make_unique<x86_64elf>(filePath.toStdString());
         x86_64Disasm disasm(*elf);
         Disassembler &disassembler = disasm;
@@ -43,7 +45,11 @@ void textviewer::openFile(const QString &filePath) {
         //sections = {".plt.got"};
         std::vector<std::future<std::string> > futures;
         std::counting_semaphore<4> sem(4);
-        std::cout << elf->lookupRangeSymbol(0xa000) << std::endl;
+
+        std::chrono::duration<double, std::milli> ms = clock::now() - start;
+        start = std::chrono::high_resolution_clock::now();
+        std::cout << "Ready to start futures" << ": " << ms.count() << " ms\n";
+        elepasedTime += ms.count();
 
         for (const std::string &sec: sections) {
             sem.acquire();
@@ -69,10 +75,24 @@ void textviewer::openFile(const QString &filePath) {
             text += QString::fromStdString(f.get()) + "\n";
         }
 
-        //text = "<p><a href =\"https://alligatoah.de/\">test</a></p>"+text;
+        ms = clock::now() - start;
+        start = std::chrono::high_resolution_clock::now();
+        std::cout << "futures complete " << ": " << ms.count() << " ms\n";
+        elepasedTime += ms.count();
+
+
+        ms = clock::now() - start;
+        start = std::chrono::high_resolution_clock::now();
+        std::cout << "ready to set HTML " << ": " << ms.count() << " ms\n";
+        elepasedTime += ms.count();
+
+
         ui->textBrowser->setHtml(text);
-        const std::chrono::duration<double, std::milli> ms = clock::now() - start;
-        std::cout << "Elapsed time to disassemble " << ": " << ms.count() << " ms\n";
+
+        ms = clock::now() - start;
+        std::cout << "completed to set HTML " << ": " << ms.count() << " ms\n";
+
+        std::cout << "complete time :" << elepasedTime + ms.count() << std::endl;
     } catch (std::runtime_error &e) {
         QMessageBox::critical(this, tr("Error"), e.what());
     }
@@ -93,8 +113,11 @@ void textviewer::on_textBrowser_anchorClicked(const QUrl &arg1) {
     QTextCursor cursor = ui->textBrowser->document()->find(pos + ":");
 
     if (!cursor.isNull()) {
-        std::cout << "jumped to" <<  pos.toStdString() << std::endl;
+        std::cout << "jumped to" << pos.toStdString() << std::endl;
         ui->textBrowser->setTextCursor(cursor);
         ui->textBrowser->ensureCursorVisible();
+        return;
     }
+
+    QToolTip::showText(QCursor::pos(), "Link target not in Textview");
 }

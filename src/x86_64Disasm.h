@@ -16,6 +16,8 @@ public:
     std::string disassemblePart(const std::vector<uint8_t> &machineCode, uint64_t startingAddress) override;
 
     ~x86_64Disasm() override;
+private:
+    std::string baseUrl = "https://www.felixcloutier.com/x86/";
 
 };
 
