@@ -21,7 +21,7 @@
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer) {
     ui->setupUi(this);
-    ui->widget->setMinimumSize(300, 20);
+    ui->memBar->setMinimumSize(300, 20);
 }
 
 void textviewer::openFile(const QString &filePath) {
@@ -33,8 +33,11 @@ void textviewer::openFile(const QString &filePath) {
 
     std::cout << "Open File: " << filePath.toStdString() << std::endl;
     try {
-        auto start = std::chrono::high_resolution_clock::now();
-        auto elepasedTime = 0.0;
+        const auto start = std::chrono::high_resolution_clock::now();
+        auto elapsedTime = 0.0;
+
+        auto sectionTime = std::chrono::high_resolution_clock::now();
+        std::cout << "start disassembly" << std::endl;
 
         elf = std::make_unique<x86_64elf>(filePath.toStdString());
         x86_64Disasm disasm(*elf);
@@ -47,10 +50,6 @@ void textviewer::openFile(const QString &filePath) {
         std::vector<std::future<std::string> > futures;
         std::counting_semaphore<4> sem(4);
 
-        std::chrono::duration<double, std::milli> ms = clock::now() - start;
-        start = std::chrono::high_resolution_clock::now();
-        std::cout << "Ready to start futures" << ": " << ms.count() << " ms\n";
-        elepasedTime += ms.count();
 
         for (const std::string &sec: sections) {
             sem.acquire();
@@ -76,22 +75,18 @@ void textviewer::openFile(const QString &filePath) {
             text += QString::fromStdString(f.get()) + "\n";
         }
 
-        ms = clock::now() - start;
-        start = std::chrono::high_resolution_clock::now();
-        std::cout << "futures complete " << ": " << ms.count() << " ms\n";
-        elepasedTime += ms.count();
-
-
-        ms = clock::now() - start;
-        start = std::chrono::high_resolution_clock::now();
-        std::cout << "ready to set HTML " << ": " << ms.count() << " ms\n";
-        elepasedTime += ms.count();
-
+        std::chrono::duration<double, std::milli> duration = clock::now() - sectionTime;
+        std::cout << "finished disassembly in " << duration.count() << std::endl
+                << "start setHTML" << std::endl;
+        sectionTime = std::chrono::high_resolution_clock::now();
 
         ui->textBrowser->setHtml(text);
 
-        ms = clock::now() - start;
-        std::cout << "completed to set HTML " << ": " << ms.count() << " ms\n";
+        duration = clock::now() - sectionTime;
+        std::cout << "finished setHTML in " << duration.count() << std::endl
+                << "start memBar" << std::endl;
+        sectionTime = std::chrono::high_resolution_clock::now();
+
 
         auto progHeaders = elf->getLoadableProgramHeaders();
         auto secHeaders = elf->getLoadableSectionHeaders();
@@ -117,10 +112,16 @@ void textviewer::openFile(const QString &filePath) {
             }
         }
 
-        ui->widget->initializeBar(sectionBar, programBar);
+        ui->memBar->initializeBar(sectionBar, programBar);
 
+        duration = clock::now() - sectionTime;
+        std::cout << "finished memBar in " << duration.count() << std::endl;
+        sectionTime = std::chrono::high_resolution_clock::now();
 
-        std::cout << "complete time :" << elepasedTime + ms.count() << std::endl;
+        const std::chrono::duration<double, std::milli> ms = clock::now() - start;
+        elapsedTime = ms.count();
+
+        std::cout << "complete time :" << elapsedTime << std::endl;
     } catch (std::runtime_error &e) {
         QMessageBox::critical(this, tr("Error"), e.what());
     }
