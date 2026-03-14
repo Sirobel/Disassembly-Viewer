@@ -1,0 +1,182 @@
+//
+// Created by finns on 10.03.26.
+//
+
+// You may need to build the project (run Qt uic code generator) to get "ui_membar.h" resolved
+
+#include "membar.h"
+
+#include <iostream>
+
+#include "ui_membar.h"
+#include <QPainter>
+#include <QRandomGenerator>
+#include <QMouseEvent>
+#include <QToolTip>
+
+
+membar::membar(QWidget *parent) : QWidget(parent), ui(new Ui::membar) {
+    ui->setupUi(this);
+    drawTarget = -1;
+    maxSize = 0;
+
+    hoverTimer.setSingleShot(true);
+    hoverTimer.setInterval(1000);
+    mousePos = QPoint(0, 0);
+    hoverIndex = -1;
+
+    setMouseTracking(true);
+    connect(&hoverTimer, &QTimer::timeout, this, [this]() {
+        if (hoverIndex != -1 && drawTarget != -1) {
+            QToolTip::showText(mapToGlobal(mousePos), sectionHeaders[drawTarget][hoverIndex].name, this);
+        }
+    });
+}
+
+membar::~membar() {
+    delete ui;
+}
+
+void membar::initializeBar(const std::vector<std::vector<Segment> > &secHeader,
+                           const std::vector<Segment> &progHeader) {
+    maxSize = 0;
+    drawTarget = -1;
+    programHeaders = progHeader;
+    sectionHeaders = secHeader;
+
+    colors.resize(static_cast<long>(programHeaders.size()));
+
+    for (int i = 0; i < progHeader.size(); ++i) {
+        colors[i] = QColor(
+            QRandomGenerator::global()->bounded(255),
+            QRandomGenerator::global()->bounded(255),
+            QRandomGenerator::global()->bounded(255)
+        );
+
+        maxSize += programHeaders[i].size;
+    }
+}
+
+void membar::paintEvent(QPaintEvent *event) {
+    if (drawTarget == -1)
+        drawAll();
+    else
+        drawSectionHeaders();
+}
+
+void membar::mousePressEvent(QMouseEvent *event) {
+    if (drawTarget != -1) {
+        drawTarget = -1;
+        update();
+        std::cout << "new Draw Target: " << drawTarget << std::endl;
+        return;
+    }
+
+
+    const QPointF pos = event->pos();
+
+    for (int i = 0; i < programHeadersRects.size(); ++i) {
+        if (programHeadersRects[i].contains(pos)) {
+            drawTarget = i;
+            break;
+        }
+    }
+
+    update();
+    std::cout << "new Draw Target: " << drawTarget << std::endl;
+}
+
+void membar::mouseMoveEvent(QMouseEvent *event) {
+    if (drawTarget == -1)
+        return;
+
+    const QPointF pos = event->pos();
+    int newHover = -1;
+
+    for (int i = 0; i < programHeadersRects.size(); ++i) {
+        if (programHeadersRects[i].contains(pos)) {
+            newHover = i;
+            mousePos = event->pos();
+            break;
+        }
+    }
+
+    if (newHover != hoverIndex) {
+        hoverIndex = newHover;
+        hoverTimer.stop();
+
+        if (hoverIndex != -1)
+            hoverTimer.start();
+    }
+}
+
+void membar::leaveEvent(QEvent *event) {
+    hoverTimer.stop();
+    hoverIndex = -1;
+}
+
+void membar::drawAll() {
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setFont(QFont("Arial", 10, QFont::Bold));
+
+    programHeadersRects.clear();
+
+    const double scale = width() / static_cast<double>(maxSize);
+
+    double x = 0;
+    for (int i = 0; i < programHeaders.size(); ++i) {
+        const auto w = static_cast<double>(programHeaders[i].size) * scale;
+        const double sectionScale = w / static_cast<double>(programHeaders[i].size);
+
+        auto rec = QRectF(x, 0, w, height());
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(rec);
+
+        for (const auto &segment: sectionHeaders[i]) {
+            if (segment.size == 0)
+                continue;
+
+            painter.setPen(QPen(Qt::black, 2));
+            auto secRec = QRectF(x + static_cast<double>(segment.addr - programHeaders[i].addr) * sectionScale, 0,
+                                 static_cast<double>(segment.size) * sectionScale, height());
+            painter.setBrush(colors[i]);
+            painter.drawRect(secRec);
+
+            if (QFontMetrics fm(QFont("Arial", 10, QFont::Bold)); secRec.width() > fm.horizontalAdvance(segment.name)) {
+                painter.setPen(Qt::white);
+                painter.drawText(secRec, Qt::AlignCenter, segment.name);
+            }
+        }
+
+        programHeadersRects.push_back(rec);
+        x += w;
+    }
+}
+
+void membar::drawSectionHeaders() {
+    programHeadersRects.clear();
+    QPainter painter(this);
+
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setBrush(colors[drawTarget]);
+    painter.setPen(QPen(Qt::black, 2));
+    painter.setFont(QFont("Arial", 10, QFont::Bold));
+
+    const double scale = width() / static_cast<double>(programHeaders[drawTarget].size);
+
+    for (const auto &segment: sectionHeaders[drawTarget]) {
+        painter.setPen(QPen(Qt::black, 2));
+        const uint64_t start = segment.addr - programHeaders[drawTarget].addr;
+        auto rect = QRectF(static_cast<double>(start) * scale, 0, static_cast<double>(segment.size) * scale, height());
+        painter.drawRect(rect);
+
+        painter.setPen(Qt::white);
+        if (QFontMetrics fm(QFont("Arial", 10, QFont::Bold)); rect.width() > fm.horizontalAdvance(segment.name)) {
+            painter.setPen(Qt::white);
+            painter.drawText(rect, Qt::AlignCenter, segment.name);
+        }
+
+        programHeadersRects.push_back(rect);
+    }
+}

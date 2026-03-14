@@ -32,11 +32,17 @@ add_executable(Disassembly-Viewer src/main.cpp
         src/Disassembler.h
         src/x86_64Disasm.cpp
         src/x86_64Disasm.h
+        gui/widgets/membar.cpp
+        gui/widgets/membar.h
+        gui/widgets/membar.ui
 )
 target_include_directories(Disassembly-Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/gui
+        ${CMAKE_SOURCE_DIR}/gui/widgets
         ${CMAKE_SOURCE_DIR}/src
-        ${CAPSTONE_INCLUDE_DIRS})
+        ${CAPSTONE_INCLUDE_DIRS}
+
+)
 target_link_libraries(Disassembly-Viewer
         Qt::Core
         Qt::Gui

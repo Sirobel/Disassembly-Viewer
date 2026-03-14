@@ -19,7 +19,7 @@ public:
 
     virtual ~ElfHandler() = default;
 
-    virtual std::vector<std::string> getSectionHeadersNames() {
+    virtual std::vector<std::pair<uint64_t,std::string>> getSectionHeadersNames() {
         return {};
     }
 
@@ -36,6 +36,13 @@ public:
 
     virtual uint64_t getAddressOfSegment(const std::string &segmentName) {
         return 0;
+    }
+
+    virtual std::vector<std::pair<uint64_t, uint64_t>> getLoadableProgramHeaders() {
+        return {};
+    }
+    virtual std::vector<std::pair<uint64_t, uint64_t>> getLoadableSectionHeaders() {
+        return {};
     }
 
 private:

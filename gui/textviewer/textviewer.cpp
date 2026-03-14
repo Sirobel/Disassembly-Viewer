@@ -21,6 +21,7 @@
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer) {
     ui->setupUi(this);
+    ui->widget->setMinimumSize(300, 20);
 }
 
 void textviewer::openFile(const QString &filePath) {
@@ -91,6 +92,33 @@ void textviewer::openFile(const QString &filePath) {
 
         ms = clock::now() - start;
         std::cout << "completed to set HTML " << ": " << ms.count() << " ms\n";
+
+        auto progHeaders = elf->getLoadableProgramHeaders();
+        auto secHeaders = elf->getLoadableSectionHeaders();
+
+        std::vector<membar::Segment> programBar;
+        std::vector<std::vector<membar::Segment> > sectionBar;
+        sectionBar.resize(progHeaders.size());
+        auto table = elf->getSectionHeadersNames();
+
+        for (int i = 0; i < progHeaders.size(); ++i) {
+            programBar.emplace_back("", progHeaders[i].first, progHeaders[i].second);
+
+            for (auto &sec: secHeaders) {
+                if (sec.first >= progHeaders[i].first && sec.first + sec.second <= progHeaders[i].first + progHeaders[i]
+                    .second) {
+                    for (auto &[fst, snd]: table) {
+                        if (fst == sec.first) {
+                            sectionBar[i].emplace_back(QString::fromStdString(snd), sec.first, sec.second);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        ui->widget->initializeBar(sectionBar, programBar);
+
 
         std::cout << "complete time :" << elepasedTime + ms.count() << std::endl;
     } catch (std::runtime_error &e) {

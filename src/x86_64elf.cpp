@@ -184,11 +184,11 @@ void x86_64elf::createSymbolTables() {
 
 x86_64elf::~x86_64elf() = default;
 
-std::vector<std::string> x86_64elf::getSectionHeadersNames() {
-    std::vector<std::string> names;
+std::vector<std::pair<uint64_t, std::string> > x86_64elf::getSectionHeadersNames() {
+    std::vector<std::pair<uint64_t, std::string> > names;
 
-    for (const auto &k: segmentsIndex | std::views::keys) {
-        names.emplace_back(k);
+    for (const auto &[k,v]: segmentsIndex) {
+        names.emplace_back(v.sh_addr, k);
     }
     return names;
 }
@@ -235,4 +235,33 @@ uint64_t x86_64elf::getAddressOfSegment(const std::string &segmentName) {
 std::string x86_64elf::lookupSymbol(const uint64_t addr) {
     const auto symbol = symbolAddressTable.find(addr);
     return symbol != symbolAddressTable.end() ? symbol->second : "";
+}
+
+std::vector<std::pair<uint64_t, uint64_t> > x86_64elf::getLoadableProgramHeaders() {
+    if (programHeaders.empty())
+        return {};
+
+    std::vector<std::pair<uint64_t, uint64_t> > erg;
+
+    for (const auto &header: programHeaders) {
+        if (header.p_type != PT_LOAD)
+            continue;
+
+        erg.emplace_back(header.p_vaddr, header.p_memsz);
+    }
+
+    return erg;
+}
+
+std::vector<std::pair<uint64_t, uint64_t> > x86_64elf::getLoadableSectionHeaders() {
+    if (sectionHeaders.empty())
+        return {};
+
+    std::vector<std::pair<uint64_t, uint64_t> > erg;
+    for (const auto &header: sectionHeaders) {
+        if (header.sh_flags & SHF_ALLOC)
+            erg.emplace_back(header.sh_addr, header.sh_size);
+    }
+
+    return erg;
 }

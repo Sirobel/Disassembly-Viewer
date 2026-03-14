@@ -38,7 +38,6 @@ private:
 public:
     ~x86_64elf() override;
 
-    std::vector<std::string> getSectionHeadersNames() override;
 
     std::vector<uint8_t> getSection(const std::string &sectionName) override;
 
@@ -47,6 +46,12 @@ public:
     uint64_t getAddressOfSegment(const std::string &segmentName) override;
 
     std::string lookupSymbol(uint64_t addr) override;
+
+    std::vector<std::pair<uint64_t, uint64_t> > getLoadableProgramHeaders() override;
+
+    std::vector<std::pair<uint64_t, uint64_t> > getLoadableSectionHeaders() override;
+
+    std::vector<std::pair<uint64_t, std::string>> getSectionHeadersNames() override;
 };
 
 

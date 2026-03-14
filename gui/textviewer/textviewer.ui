@@ -17,6 +17,9 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
+      <widget class="membar" name="widget" native="true"/>
+     </item>
+     <item>
       <widget class="QTextBrowser" name="textBrowser">
        <property name="html">
         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -41,6 +44,14 @@ li.checked::marker { content: &quot;\2612&quot;; }
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>membar</class>
+   <extends>QWidget</extends>
+   <header>membar.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
