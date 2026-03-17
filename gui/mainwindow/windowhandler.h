@@ -7,10 +7,10 @@
 
 #include <QMainWindow>
 #include <QStackedWidget>
-#include <QListWidget>
 
 #include "startwindow/recentfiles.h"
 #include "textviewer/textviewer.h"
+#include "settings/mainsettings.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -34,14 +34,17 @@ private:
     QStackedWidget *stack;
     textviewer *textViewer;
     recentfiles *recentFiles;
+    mainsettings *settings = nullptr;
 
     void setupTextViewerMenubar();
+
     void setupRecentFilesMenubar();
+
     void updateMenubar(int index);
 
-    void openRecentFile(QListWidgetItem *item);
-    void openFile();
+    void openRecentFile(const QListWidgetItem *item);
 
+    void openFile();
 };
 
 

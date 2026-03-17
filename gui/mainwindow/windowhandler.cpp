@@ -11,6 +11,7 @@
 #include <QFileDialog>
 
 #include "ui_windowhandler.h"
+#include "settings/mainsettings.h"
 
 
 windowhandler::windowhandler(QWidget *parent) : QMainWindow(parent), ui(new Ui::windowhandler) {
@@ -30,7 +31,6 @@ windowhandler::windowhandler(QWidget *parent) : QMainWindow(parent), ui(new Ui::
     updateMenubar(0);
 
     connect(recentFiles->getListWidget(), &QListWidget::itemClicked, this, &windowhandler::openRecentFile);
-
 }
 
 windowhandler::~windowhandler() {
@@ -56,7 +56,22 @@ void windowhandler::setupRecentFilesMenubar() {
     menuBar()->clear();
     const auto fileMenu = menuBar()->addMenu("File");
     const auto openAction = fileMenu->addAction("Open");
+    const auto settingsAction = fileMenu->addAction("Settings");
     connect(openAction, &QAction::triggered, this, &windowhandler::openFile);
+    connect(settingsAction, &QAction::triggered, [this]() {
+        if (!settings) {
+            settings = new mainsettings(this);
+            connect(settings, &mainsettings::RecentFilesAmount, this, [this](const int newAmount) {
+                recentFiles->setAmount(newAmount);
+                recentFiles->refresh();
+            });
+        }
+
+        settings->setWindowFlag(Qt::Window);
+        settings->show();
+        settings->raise();
+        settings->activateWindow();
+    });
 }
 
 void windowhandler::updateMenubar(const int index) {
@@ -72,7 +87,7 @@ void windowhandler::updateMenubar(const int index) {
     }
 }
 
-void windowhandler::openRecentFile(QListWidgetItem *item) {
+void windowhandler::openRecentFile(const QListWidgetItem *item) {
     const QString path = item->text();
     recentFiles->addFiletoList(path);
     stack->setCurrentWidget(textViewer);

@@ -35,6 +35,15 @@ add_executable(Disassembly-Viewer src/main.cpp
         gui/widgets/membar.cpp
         gui/widgets/membar.h
         gui/widgets/membar.ui
+        gui/settings/mainsettings.cpp
+        gui/settings/mainsettings.h
+        gui/settings/mainsettings.ui
+        gui/settings/recentfilessettings.cpp
+        gui/settings/recentfilessettings.h
+        gui/settings/recentfilessettings.ui
+        gui/settings/textviewersettings.cpp
+        gui/settings/textviewersettings.h
+        gui/settings/textviewersettings.ui
 )
 target_include_directories(Disassembly-Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/gui

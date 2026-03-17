@@ -9,10 +9,10 @@
 #include <QSettings>
 
 
-recentfiles::recentfiles(QWidget *parent) : QWidget(parent), ui(new Ui::recentfiles) {
+recentfiles::recentfiles(QWidget *parent) : QWidget(parent), ui(new Ui::recentfiles),
+                                            settings("Sirobel", "Disassembly-Viewer") {
     ui->setupUi(this);
 
-    const QSettings settings("Sirobel", "Disassembly-Viewer");
 
     for (auto filepaths = settings.value("recentFiles").toStringList(); const QString &filePath: filepaths) {
         ui->PathListWidget->addItem(new QListWidgetItem(filePath));
@@ -33,13 +33,33 @@ void recentfiles::addFiletoList(const QString &filePath) {
 
     ui->PathListWidget->insertItem(0, filePath);
 
-    while (ui->PathListWidget->count() > 10) {
+    while (ui->PathListWidget->count() > listAmount) {
         delete ui->PathListWidget->takeItem(ui->PathListWidget->count() - 1);
     }
 
     QStringList list;
     list.reserve(ui->PathListWidget->count());
     for (int i = 0; i < ui->PathListWidget->count(); ++i) { list << ui->PathListWidget->item(i)->text(); }
-    QSettings settings("Sirobel", "Disassembly-Viewer");
     settings.setValue("recentFiles", list);
+}
+
+void recentfiles::setAmount(const int amount) {
+    listAmount = amount;
+}
+
+void recentfiles::refresh() {
+    while (ui->PathListWidget->count() > listAmount) {
+        delete ui->PathListWidget->takeItem(ui->PathListWidget->count() - 1);
+    }
+
+    QStringList list;
+    list.reserve(ui->PathListWidget->count());
+    for (int i = 0; i < ui->PathListWidget->count(); ++i) { list << ui->PathListWidget->item(i)->text(); };
+    settings.setValue("recentFiles", list);
+
+    ui->PathListWidget->clear();
+
+    for (auto filepaths = settings.value("recentFiles").toStringList(); const QString &filePath: filepaths) {
+        ui->PathListWidget->addItem(new QListWidgetItem(filePath));
+    }
 }

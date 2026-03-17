@@ -6,6 +6,7 @@
 #define DISASSEMBLY_VIEWER_RECENTFILES_H
 
 #include <QListWidget>
+#include <QSettings>
 #include <QWidget>
 
 
@@ -24,11 +25,19 @@ public:
     explicit recentfiles(QWidget *parent = nullptr);
 
     ~recentfiles() override;
+
     QListWidget *getListWidget();
-    void addFiletoList(const QString& filePath);
+
+    void addFiletoList(const QString &filePath);
+
+    void setAmount(int amount);
+
+    void refresh();
 
 private:
     Ui::recentfiles *ui;
+    int listAmount;
+    QSettings settings;
 };
 
 
