@@ -46,6 +46,7 @@ void mainsettings::on_listWidget_itemClicked(QListWidgetItem *item) {
 }
 
 void mainsettings::on_CancelPushButton_clicked() {
+    recentFilesSettings->loadSettings();
     close();
 }
 
@@ -57,5 +58,5 @@ void mainsettings::on_OkPushButton_clicked() {
 
 void mainsettings::on_ApplyPushButton_clicked() {
     recentFilesSettings->saveSettings();
-    emit RecentFilesAmount(recentFilesSettings->getRecentFilesAmount());
+    emit SavedSettings();
 }

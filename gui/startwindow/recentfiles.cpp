@@ -14,9 +14,7 @@ recentfiles::recentfiles(QWidget *parent) : QWidget(parent), ui(new Ui::recentfi
     ui->setupUi(this);
 
 
-    for (auto filepaths = settings.value("recentFiles").toStringList(); const QString &filePath: filepaths) {
-        ui->PathListWidget->addItem(new QListWidgetItem(filePath));
-    }
+    refresh();
 }
 
 recentfiles::~recentfiles() {
@@ -43,11 +41,14 @@ void recentfiles::addFiletoList(const QString &filePath) {
     settings.setValue("recentFiles", list);
 }
 
-void recentfiles::setAmount(const int amount) {
-    listAmount = amount;
-}
-
 void recentfiles::refresh() {
+    ui->PathListWidget->clear();
+
+    listAmount = settings.value("amountOfRecentFiles").toInt();
+    for (auto filepaths = settings.value("recentFiles").toStringList(); const QString &filePath: filepaths) {
+        ui->PathListWidget->addItem(new QListWidgetItem(filePath));
+    }
+
     while (ui->PathListWidget->count() > listAmount) {
         delete ui->PathListWidget->takeItem(ui->PathListWidget->count() - 1);
     }
@@ -56,10 +57,4 @@ void recentfiles::refresh() {
     list.reserve(ui->PathListWidget->count());
     for (int i = 0; i < ui->PathListWidget->count(); ++i) { list << ui->PathListWidget->item(i)->text(); };
     settings.setValue("recentFiles", list);
-
-    ui->PathListWidget->clear();
-
-    for (auto filepaths = settings.value("recentFiles").toStringList(); const QString &filePath: filepaths) {
-        ui->PathListWidget->addItem(new QListWidgetItem(filePath));
-    }
 }

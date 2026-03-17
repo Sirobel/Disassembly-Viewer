@@ -23,7 +23,7 @@ QT_END_NAMESPACE
 class mainsettings : public QWidget {
     Q_OBJECT
 signals:
-    void RecentFilesAmount(int amount);
+    void SavedSettings();
 
 public:
     explicit mainsettings(QWidget *parent = nullptr);

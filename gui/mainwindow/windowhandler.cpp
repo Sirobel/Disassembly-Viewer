@@ -44,6 +44,21 @@ void windowhandler::setupTextViewerMenubar() {
     const auto openAction = fileMenu->addAction("Open");
     connect(openAction, &QAction::triggered, this, &windowhandler::openFile);
 
+    const auto settingsAction = fileMenu->addAction("Settings");
+    connect(settingsAction, &QAction::triggered, [this]() {
+        if (!settings) {
+            settings = new mainsettings(this);
+            connect(settings, &mainsettings::SavedSettings, this, [this]() {
+                recentFiles->refresh();
+            });
+        }
+
+        settings->setWindowFlag(Qt::Window);
+        settings->show();
+        settings->raise();
+        settings->activateWindow();
+    });
+
     const auto closeAction = fileMenu->addAction("Close");
     connect(closeAction, &QAction::triggered, [this]() {
         stack->setCurrentWidget(recentFiles);
@@ -56,13 +71,13 @@ void windowhandler::setupRecentFilesMenubar() {
     menuBar()->clear();
     const auto fileMenu = menuBar()->addMenu("File");
     const auto openAction = fileMenu->addAction("Open");
-    const auto settingsAction = fileMenu->addAction("Settings");
     connect(openAction, &QAction::triggered, this, &windowhandler::openFile);
+
+    const auto settingsAction = fileMenu->addAction("Settings");
     connect(settingsAction, &QAction::triggered, [this]() {
         if (!settings) {
             settings = new mainsettings(this);
-            connect(settings, &mainsettings::RecentFilesAmount, this, [this](const int newAmount) {
-                recentFiles->setAmount(newAmount);
+            connect(settings, &mainsettings::SavedSettings, this, [this]() {
                 recentFiles->refresh();
             });
         }
