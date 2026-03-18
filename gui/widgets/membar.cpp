@@ -15,7 +15,7 @@
 #include <QToolTip>
 
 
-membar::membar(QWidget *parent) : QWidget(parent), ui(new Ui::membar) {
+membar::membar(QWidget *parent) : QWidget(parent), ui(new Ui::membar), settings("Sirobel", "Disassembly-Viewer") {
     ui->setupUi(this);
     drawTarget = -1;
     maxSize = 0;
@@ -43,18 +43,59 @@ void membar::initializeBar(const std::vector<std::vector<Segment> > &secHeader,
     drawTarget = -1;
     programHeaders = progHeader;
     sectionHeaders = secHeader;
+    colors.clear();
+
 
     colors.resize(static_cast<long>(programHeaders.size()));
 
     for (int i = 0; i < progHeader.size(); ++i) {
+        maxSize += programHeaders[i].size;
+
+        if (colors[i].isValid())
+            continue;
+
         colors[i] = QColor(
             QRandomGenerator::global()->bounded(255),
             QRandomGenerator::global()->bounded(255),
             QRandomGenerator::global()->bounded(255)
         );
-
-        maxSize += programHeaders[i].size;
     }
+
+    refresh();
+}
+
+void membar::refresh() {
+    colors.clear();
+
+    for (QStringList colorList = settings.value("memBarColors").toStringList(); const auto &c: colorList) {
+        colors.push_back(QColor(c));
+    }
+
+    colors.resize(static_cast<long>(programHeaders.size()));
+
+    for (int i = 0; i < programHeaders.size(); ++i) {
+        if (colors[i].isValid())
+            continue;
+
+        colors[i] = QColor(
+            QRandomGenerator::global()->bounded(255),
+            QRandomGenerator::global()->bounded(255),
+            QRandomGenerator::global()->bounded(255)
+        );
+    }
+
+    fontColor = QColor(settings.value("memBarTextColor").toString());
+    if (!fontColor.isValid())
+        fontColor = Qt::white;
+
+    borderColor = QColor(settings.value("memBarBorderColor").toString());
+    if (!borderColor.isValid())
+        borderColor = Qt::black;
+
+    fontSize = settings.value("memBarFontSize").toInt();
+    borderSize = settings.value("memBarBorderSize").toInt();
+
+    repaint();
 }
 
 void membar::paintEvent(QPaintEvent *event) {
@@ -118,7 +159,7 @@ void membar::leaveEvent(QEvent *event) {
 void membar::drawAll() {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
-    painter.setFont(QFont("Arial", 10, QFont::Bold));
+    painter.setFont(QFont("Arial", fontSize, QFont::Bold));
 
     programHeadersRects.clear();
 
@@ -137,14 +178,15 @@ void membar::drawAll() {
             if (segment.size == 0)
                 continue;
 
-            painter.setPen(QPen(Qt::black, 2));
+            painter.setPen(QPen(borderColor, borderSize));
             auto secRec = QRectF(x + static_cast<double>(segment.addr - programHeaders[i].addr) * sectionScale, 0,
                                  static_cast<double>(segment.size) * sectionScale, height());
             painter.setBrush(colors[i]);
             painter.drawRect(secRec);
 
-            if (QFontMetrics fm(QFont("Arial", 10, QFont::Bold)); secRec.width() > fm.horizontalAdvance(segment.name)) {
-                painter.setPen(Qt::white);
+            if (QFontMetrics fm(QFont("Arial", fontSize, QFont::Bold));
+                secRec.width() > fm.horizontalAdvance(segment.name)) {
+                painter.setPen(fontColor);
                 painter.drawText(secRec, Qt::AlignCenter, segment.name);
             }
         }
@@ -160,20 +202,20 @@ void membar::drawSectionHeaders() {
 
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setBrush(colors[drawTarget]);
-    painter.setPen(QPen(Qt::black, 2));
-    painter.setFont(QFont("Arial", 10, QFont::Bold));
+    painter.setPen(QPen(borderColor, borderSize));
+    painter.setFont(QFont("Arial", fontSize, QFont::Bold));
 
     const double scale = width() / static_cast<double>(programHeaders[drawTarget].size);
 
     for (const auto &segment: sectionHeaders[drawTarget]) {
-        painter.setPen(QPen(Qt::black, 2));
+        painter.setPen(QPen(borderColor, borderSize));
         const uint64_t start = segment.addr - programHeaders[drawTarget].addr;
         auto rect = QRectF(static_cast<double>(start) * scale, 0, static_cast<double>(segment.size) * scale, height());
         painter.drawRect(rect);
 
         painter.setPen(Qt::white);
-        if (QFontMetrics fm(QFont("Arial", 10, QFont::Bold)); rect.width() > fm.horizontalAdvance(segment.name)) {
-            painter.setPen(Qt::white);
+        if (QFontMetrics fm(QFont("Arial", fontSize, QFont::Bold)); rect.width() > fm.horizontalAdvance(segment.name)) {
+            painter.setPen(fontColor);
             painter.drawText(rect, Qt::AlignCenter, segment.name);
         }
 

@@ -5,6 +5,7 @@
 #ifndef DISASSEMBLY_VIEWER_MEMBAR_H
 #define DISASSEMBLY_VIEWER_MEMBAR_H
 
+#include <QSettings>
 #include <QWidget>
 #include <QTimer>
 
@@ -33,15 +34,20 @@ public:
 
     void initializeBar(const std::vector<std::vector<Segment> > &secHeader, const std::vector<Segment> &progHeader);
 
+    void refresh();
+
 protected:
     void paintEvent(QPaintEvent *event) override;
 
     void mousePressEvent(QMouseEvent *event) override;
+
     void mouseMoveEvent(QMouseEvent *event) override;
+
     void leaveEvent(QEvent *event) override;
 
 private:
     Ui::membar *ui;
+    QSettings settings;
 
     std::vector<Segment> programHeaders;
     std::vector<std::vector<Segment> > sectionHeaders;
@@ -53,6 +59,11 @@ private:
     QTimer hoverTimer;
     int hoverIndex;
     QPoint mousePos;
+
+    int fontSize = 0;
+    QColor fontColor = Qt::white;
+    int borderSize = 0;
+    QColor borderColor = Qt::black;
 
     void drawAll();
 

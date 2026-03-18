@@ -7,6 +7,7 @@
 
 #include <QWidget>
 #include <ElfHandler.h>
+#include <QSettings>
 
 
 QT_BEGIN_NAMESPACE
@@ -25,6 +26,8 @@ public:
 
     void openFile(const QString &filePath);
 
+    void refresh();
+
     ~textviewer() override;
 
 private slots:
@@ -32,6 +35,7 @@ private slots:
 
 private:
     Ui::textviewer *ui;
+    QSettings settings;
     std::unique_ptr<ElfHandler> elf;
     std::vector<QString> sectionHeaders;
 };

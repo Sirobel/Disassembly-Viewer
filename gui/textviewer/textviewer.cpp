@@ -17,11 +17,14 @@
 #include <future>
 #include <semaphore>
 #include <QDesktopServices>
+#include <qstyle.h>
 #include <QToolTip>
 
-textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer) {
+textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer),
+                                          settings("Sirobel", "Disassembly-Viewer") {
     ui->setupUi(this);
     ui->memBar->setMinimumSize(300, 20);
+    refresh();
 }
 
 void textviewer::openFile(const QString &filePath) {
@@ -71,8 +74,10 @@ void textviewer::openFile(const QString &filePath) {
 
         int index = 0;
         for (auto &f: futures) {
+            text += "<pre>";
             text += "Disassembly of section " + sections[index++] + "\n";
             text += QString::fromStdString(f.get()) + "\n";
+            text += "</pre>";
         }
 
         std::chrono::duration<double, std::milli> duration = clock::now() - sectionTime;
@@ -125,6 +130,30 @@ void textviewer::openFile(const QString &filePath) {
     } catch (std::runtime_error &e) {
         QMessageBox::critical(this, tr("Error"), e.what());
     }
+}
+
+void textviewer::refresh() {
+    const QString css = QString(R"(
+pre {
+    font-size: %1px;
+    font-family: monospace;
+    padding: 6px;
+    color: %3;
+}
+ a {
+    color: %2;
+    font-size: %1;
+    text-decoration: %4;
+}
+)")
+            .arg(settings.value("fontSize", 16).toInt())
+            .arg(settings.value("linkColor", "#0000EE").toString())
+            .arg(settings.value("textColor", "#000000").toString())
+            .arg(settings.value("linkUnderscore", Qt::Unchecked).toInt() == Qt::Checked ? "underline" : "none");
+
+
+    ui->textBrowser->document()->setDefaultStyleSheet(css);
+    ui->memBar->refresh();
 }
 
 textviewer::~textviewer() {

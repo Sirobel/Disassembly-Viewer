@@ -21,6 +21,7 @@ mainsettings::mainsettings(QWidget *parent) : QWidget(parent), ui(new Ui::mainse
     ui->stackedWidget->addWidget(textViewerSettings);
 
     recentFilesSettings->loadSettings();
+    textViewerSettings->loadSettings();
 
 
     for (auto &names: settingSections) {
@@ -47,6 +48,7 @@ void mainsettings::on_listWidget_itemClicked(QListWidgetItem *item) {
 
 void mainsettings::on_CancelPushButton_clicked() {
     recentFilesSettings->loadSettings();
+    textViewerSettings->loadSettings();
     close();
 }
 
@@ -58,5 +60,6 @@ void mainsettings::on_OkPushButton_clicked() {
 
 void mainsettings::on_ApplyPushButton_clicked() {
     recentFilesSettings->saveSettings();
+    textViewerSettings->saveSettings();
     emit SavedSettings();
 }

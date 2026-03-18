@@ -50,6 +50,7 @@ void windowhandler::setupTextViewerMenubar() {
             settings = new mainsettings(this);
             connect(settings, &mainsettings::SavedSettings, this, [this]() {
                 recentFiles->refresh();
+                textViewer->refresh();
             });
         }
 
