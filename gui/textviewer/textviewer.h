@@ -8,6 +8,7 @@
 #include <QWidget>
 #include <ElfHandler.h>
 #include <QSettings>
+#include <QShortcut>
 
 
 QT_BEGIN_NAMESPACE
@@ -33,11 +34,28 @@ public:
 private slots:
     void on_textBrowser_anchorClicked(const QUrl &arg1);
 
+    void on_searchLineEdit_textChanged(const QString &text);
+
+    void on_previousSearchPushButton_clicked();
+
+    void on_nextSearchPushButton_clicked();
+
 private:
     Ui::textviewer *ui;
     QSettings settings;
     std::unique_ptr<ElfHandler> elf;
     std::vector<QString> sectionHeaders;
+    QShortcut *shortcut;
+    int totalMatches = 0;
+    int currentMatch = 0;
+
+    void toggleSearchbar();
+
+    int countSearchResults(const QString &text);
+
+    int findCurrentMatch(const QString &text);
+
+    void updateSearchLabel();
 };
 
 

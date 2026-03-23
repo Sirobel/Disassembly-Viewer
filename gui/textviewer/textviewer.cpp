@@ -19,15 +19,27 @@
 #include <QDesktopServices>
 #include <qstyle.h>
 #include <QToolTip>
+#include <QKeySequence>
+#include <QShortcut>
+#include <QInputDialog>
+
+#include "settings/mainsettings.h"
+#include "settings/mainsettings.h"
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer),
                                           settings("Sirobel", "Disassembly-Viewer") {
     ui->setupUi(this);
-    ui->memBar->setMinimumSize(300, 20);
     refresh();
+    ui->searchGroupBox->hide();
+
+
+    shortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
+    connect(shortcut, &QShortcut::activated, this, &textviewer::toggleSearchbar);
 }
 
 void textviewer::openFile(const QString &filePath) {
+    ui->searchGroupBox->hide();
+
     using clock = std::chrono::high_resolution_clock;
     if (filePath.isEmpty()) {
         return;
@@ -178,4 +190,96 @@ void textviewer::on_textBrowser_anchorClicked(const QUrl &arg1) {
     }
 
     QToolTip::showText(QCursor::pos(), "Link target not in Textview");
+}
+
+void textviewer::toggleSearchbar() {
+    if (ui->searchGroupBox->isHidden()) {
+        ui->searchGroupBox->show();
+        ui->searchLineEdit->setFocus();
+    } else
+        ui->searchGroupBox->hide();
+}
+
+int textviewer::countSearchResults(const QString &text) {
+    if (text.isEmpty())
+        return 0;
+
+    QTextDocument *doc = ui->textBrowser->document();
+    QTextCursor cursor(doc);
+    int count = 0;
+
+    while (!cursor.isNull() && !cursor.atEnd()) {
+        cursor = doc->find(text, cursor);
+        if (!cursor.isNull())
+            count++;
+    }
+
+    return count;
+}
+
+int textviewer::findCurrentMatch(const QString &text) {
+    if (text.isEmpty())
+        return 0;
+
+    int count = 0;
+
+    QTextDocument *doc = ui->textBrowser->document();
+    QTextCursor cursor(doc);
+
+    while (!cursor.isNull() && !cursor.atEnd()) {
+        cursor = doc->find(text, cursor);
+        if (cursor.isNull())
+            return 0;
+        count++;
+
+        if (cursor.selectionStart() == ui->textBrowser->textCursor().selectionStart())
+            break;
+    }
+    return count;
+}
+
+void textviewer::updateSearchLabel() {
+    if (totalMatches == 0)
+        ui->searchMatchesLabel->setText("");
+    else
+        ui->searchMatchesLabel->setText(
+            QString("%1 / %2").arg(currentMatch).arg(totalMatches)
+        );
+}
+
+void textviewer::on_searchLineEdit_textChanged(const QString &text) {
+    ui->textBrowser->find(text);
+    totalMatches = countSearchResults(text);
+    currentMatch = findCurrentMatch(text);
+
+    updateSearchLabel();
+}
+
+void textviewer::on_previousSearchPushButton_clicked() {
+    if (ui->searchLineEdit->text().isEmpty())
+        return;
+
+
+    if (!ui->textBrowser->find(ui->searchLineEdit->text(), QTextDocument::FindBackward)) {
+        ui->textBrowser->moveCursor(QTextCursor::End);
+        ui->textBrowser->find(ui->searchLineEdit->text(), QTextDocument::FindBackward);
+    }
+    currentMatch = findCurrentMatch(ui->searchLineEdit->text());
+
+    updateSearchLabel();
+}
+
+
+void textviewer::on_nextSearchPushButton_clicked() {
+    if (ui->searchLineEdit->text().isEmpty())
+        return;
+
+
+    if (!ui->textBrowser->find(ui->searchLineEdit->text())) {
+        ui->textBrowser->moveCursor(QTextCursor::Start);
+        ui->textBrowser->find(ui->searchLineEdit->text());
+    }
+    currentMatch = findCurrentMatch(ui->searchLineEdit->text());
+
+    updateSearchLabel();
 }
