@@ -66,6 +66,15 @@ void windowhandler::setupTextViewerMenubar() {
     });
 
     const auto infoMenu = menuBar()->addMenu("Info");
+    const auto infoAction = infoMenu->addAction("Info");
+    connect(infoAction, &QAction::triggered, [this]() {
+        textViewer->showFileInfo(0);
+    });
+
+    const auto sectionAction = infoMenu->addAction("Sections");
+    connect(sectionAction, &QAction::triggered, [this]() {
+        textViewer->showFileInfo(1);
+    });
 }
 
 void windowhandler::setupRecentFilesMenubar() {

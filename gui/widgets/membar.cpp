@@ -163,11 +163,31 @@ void membar::drawAll() {
 
     programHeadersRects.clear();
 
+
     const double scale = width() / static_cast<double>(maxSize);
+
+    std::vector<double> widths;
+    widths.reserve(programHeaders.size());
+
+    for (const auto &header: programHeaders) {
+        widths.push_back(static_cast<double>(header.size) * scale);
+    }
+
+    double total = 0;
+    for (auto &w: widths) {
+        if (w < 20)
+            w = 20;
+        total += w;
+    }
+    if (total > width()) {
+        const double correction = width() / total;
+        for (auto &w: widths)
+            w *= correction;
+    }
 
     double x = 0;
     for (int i = 0; i < programHeaders.size(); ++i) {
-        const auto w = static_cast<double>(programHeaders[i].size) * scale;
+        const auto w = widths[i];
         const double sectionScale = w / static_cast<double>(programHeaders[i].size);
 
         auto rec = QRectF(x, 0, w, height());
@@ -175,9 +195,6 @@ void membar::drawAll() {
         painter.drawRect(rec);
 
         for (const auto &segment: sectionHeaders[i]) {
-            if (segment.size == 0)
-                continue;
-
             painter.setPen(QPen(borderColor, borderSize));
             auto secRec = QRectF(x + static_cast<double>(segment.addr - programHeaders[i].addr) * sectionScale, 0,
                                  static_cast<double>(segment.size) * sectionScale, height());

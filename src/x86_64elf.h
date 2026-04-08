@@ -52,6 +52,8 @@ public:
     std::vector<std::pair<uint64_t, uint64_t> > getLoadableSectionHeaders() override;
 
     std::vector<std::pair<uint64_t, std::string>> getSectionHeadersNames() override;
+
+    std::vector<std::string> getSectionNames() override;
 };
 
 

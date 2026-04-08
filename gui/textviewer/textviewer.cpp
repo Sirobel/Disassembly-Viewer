@@ -23,8 +23,6 @@
 #include <QShortcut>
 #include <QInputDialog>
 
-#include "settings/mainsettings.h"
-#include "settings/mainsettings.h"
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer),
                                           settings("Sirobel", "Disassembly-Viewer") {
@@ -35,6 +33,9 @@ textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer
 
     shortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
     connect(shortcut, &QShortcut::activated, this, &textviewer::toggleSearchbar);
+
+    fileInfo = new fileinfo(this);
+    fileInfo->close();
 }
 
 void textviewer::openFile(const QString &filePath) {
@@ -139,6 +140,8 @@ void textviewer::openFile(const QString &filePath) {
         elapsedTime = ms.count();
 
         std::cout << "complete time :" << elapsedTime << std::endl;
+
+        fileInfo->setSectionNames(elf->getSectionNames());
     } catch (std::runtime_error &e) {
         QMessageBox::critical(this, tr("Error"), e.what());
     }
@@ -166,6 +169,14 @@ pre {
 
     ui->textBrowser->document()->setDefaultStyleSheet(css);
     ui->memBar->refresh();
+}
+
+void textviewer::showFileInfo(int index) {
+    fileInfo->setWindowFlag(Qt::Window);
+    fileInfo->show();
+    fileInfo->raise();
+    fileInfo->activateWindow();
+    fileInfo->changeWidget(index);
 }
 
 textviewer::~textviewer() {

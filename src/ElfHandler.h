@@ -19,7 +19,7 @@ public:
 
     virtual ~ElfHandler() = default;
 
-    virtual std::vector<std::pair<uint64_t,std::string>> getSectionHeadersNames() {
+    virtual std::vector<std::pair<uint64_t, std::string> > getSectionHeadersNames() {
         return {};
     }
 
@@ -30,6 +30,7 @@ public:
     virtual std::string lookupRangeSymbol(uint64_t addr) {
         return "";
     }
+
     virtual std::string lookupSymbol(uint64_t addr) {
         return "";
     }
@@ -38,12 +39,17 @@ public:
         return 0;
     }
 
-    virtual std::vector<std::pair<uint64_t, uint64_t>> getLoadableProgramHeaders() {
+    virtual std::vector<std::pair<uint64_t, uint64_t> > getLoadableProgramHeaders() {
         return {};
     }
-    virtual std::vector<std::pair<uint64_t, uint64_t>> getLoadableSectionHeaders() {
+
+    virtual std::vector<std::pair<uint64_t, uint64_t> > getLoadableSectionHeaders() {
         return {};
     }
+
+    virtual std::vector<std::string> getSectionNames() {
+        return {};
+    };
 
 private:
     std::string filePath;

@@ -10,6 +10,8 @@
 #include <QSettings>
 #include <QShortcut>
 
+#include "infos/fileinfo.h"
+
 
 QT_BEGIN_NAMESPACE
 
@@ -28,6 +30,9 @@ public:
     void openFile(const QString &filePath);
 
     void refresh();
+
+    void showFileInfo(int index);
+
 
     ~textviewer() override;
 
@@ -48,6 +53,8 @@ private:
     QShortcut *shortcut;
     int totalMatches = 0;
     int currentMatch = 0;
+
+    fileinfo *fileInfo;
 
     void toggleSearchbar();
 

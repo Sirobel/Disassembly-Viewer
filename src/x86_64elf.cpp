@@ -193,6 +193,16 @@ std::vector<std::pair<uint64_t, std::string> > x86_64elf::getSectionHeadersNames
     return names;
 }
 
+std::vector<std::string> x86_64elf::getSectionNames() {
+    std::vector<std::string> names;
+
+    for (const auto &section: sectionHeaders) {
+        names.emplace_back(&stringTable[section.sh_name]);
+    }
+
+    return names;
+}
+
 std::vector<uint8_t> x86_64elf::getSection(const std::string &sectionName) {
     std::vector<uint8_t> data;
 
