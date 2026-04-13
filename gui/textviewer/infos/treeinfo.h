@@ -37,9 +37,10 @@ private:
     QVector<QString> stringTableColumn = {"Sections"};
 
     QHash<QString, QList<QPair<QString, Elf64_Sym> > > symbolTables;
-    QVector<QString> symbolTableColumn = {"Sections"};
+    QVector<QString> symbolTableColumn = {"Sections", "Type", "Binding", "Visibility"};
 
     void showStringTables();
+
     void showSymbolTables();
 };
 
