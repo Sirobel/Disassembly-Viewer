@@ -6,7 +6,10 @@
 #define DISASSEMBLY_VIEWER_FILEINFO_H
 
 #include <QWidget>
+#include <QHash>
 #include <textviewer/infos/columinfo.h>
+
+#include "textviewer/infos/treeinfo.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -28,11 +31,18 @@ public:
 
     void setSectionNames(const std::vector<std::string> &names);
 
+    void setStringTables(const std::vector<std::pair<std::string, std::vector<char> > > &tables);
+
+    void setSymbolTables(const std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > &tables);
+
 private:
     Ui::fileinfo *ui;
     columinfo *columInfo;
+    treeinfo *treeInfo;
 
     QVector<QString> sectionNames;
+    QHash<QString, QVector<QString> > stringTables;
+    QHash<QString, QList<QPair<QString, Elf64_Sym> > > symbolTables;
 };
 
 

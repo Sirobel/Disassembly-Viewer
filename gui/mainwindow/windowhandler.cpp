@@ -55,6 +55,7 @@ void windowhandler::setupTextViewerMenubar() {
         }
 
         settings->setWindowFlag(Qt::Window);
+        settings->setWindowModality(Qt::ApplicationModal);
         settings->show();
         settings->raise();
         settings->activateWindow();
@@ -75,6 +76,16 @@ void windowhandler::setupTextViewerMenubar() {
     connect(sectionAction, &QAction::triggered, [this]() {
         textViewer->showFileInfo(1);
     });
+
+    const auto stringTableAction = infoMenu->addAction("StringTables");
+    connect(stringTableAction, &QAction::triggered, [this]() {
+        textViewer->showFileInfo(2);
+    });
+
+    const auto symbolTableAction = infoMenu->addAction("SymbolTables");
+    connect(symbolTableAction, &QAction::triggered, [this]() {
+        textViewer->showFileInfo(3);
+    });
 }
 
 void windowhandler::setupRecentFilesMenubar() {
@@ -93,6 +104,7 @@ void windowhandler::setupRecentFilesMenubar() {
         }
 
         settings->setWindowFlag(Qt::Window);
+        settings->setWindowModality(Qt::ApplicationModal);
         settings->show();
         settings->raise();
         settings->activateWindow();

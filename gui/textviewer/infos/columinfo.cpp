@@ -40,10 +40,10 @@ void columinfo::setElfHeader(const Elf64_Ehdr &header) {
 }
 
 void columinfo::showHeaderInfo() {
-    ui->tableWidget->setColumnCount(static_cast<int>(fileHeaderColum.size()));
+    ui->tableWidget->setColumnCount(static_cast<int>(fileHeaderColumn.size()));
     ui->tableWidget->setRowCount(static_cast<int>(fileHeaderRow.size()));
 
-    ui->tableWidget->setHorizontalHeaderLabels(fileHeaderColum);
+    ui->tableWidget->setHorizontalHeaderLabels(fileHeaderColumn);
 
     for (int i = 0; i < ui->tableWidget->rowCount(); i++) {
         ui->tableWidget->setItem(i, 0, new QTableWidgetItem(fileHeaderRow[i]));
@@ -52,9 +52,9 @@ void columinfo::showHeaderInfo() {
 }
 
 void columinfo::showSectionInfo() {
-    ui->tableWidget->setColumnCount(static_cast<int>(sectionHeaderColum.size()));
+    ui->tableWidget->setColumnCount(static_cast<int>(sectionHeaderColumn.size()));
     ui->tableWidget->setRowCount(static_cast<int>(sectionHeaderRow.size()));
-    ui->tableWidget->setHorizontalHeaderLabels(sectionHeaderColum);
+    ui->tableWidget->setHorizontalHeaderLabels(sectionHeaderColumn);
 
     for (int i = 0; i < ui->tableWidget->rowCount(); i++) {
         ui->tableWidget->setItem(i, 0, new QTableWidgetItem(sectionHeaderRow[i]));

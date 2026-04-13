@@ -142,6 +142,8 @@ void textviewer::openFile(const QString &filePath) {
         std::cout << "complete time :" << elapsedTime << std::endl;
 
         fileInfo->setSectionNames(elf->getSectionNames());
+        fileInfo->setStringTables(elf->getStringTables());
+        fileInfo->setSymbolTables(elf->getSymbolTablesElf64());
     } catch (std::runtime_error &e) {
         QMessageBox::critical(this, tr("Error"), e.what());
     }
@@ -171,8 +173,9 @@ pre {
     ui->memBar->refresh();
 }
 
-void textviewer::showFileInfo(int index) {
+void textviewer::showFileInfo(const int index) {
     fileInfo->setWindowFlag(Qt::Window);
+    fileInfo->setWindowModality(Qt::ApplicationModal);
     fileInfo->show();
     fileInfo->raise();
     fileInfo->activateWindow();

@@ -36,7 +36,7 @@ private:
 
     Ui::columinfo *ui;
 
-    QVector<QString> fileHeaderColum = {"Field", "Value"};
+    QVector<QString> fileHeaderColumn = {"Field", "Value"};
     QVector<QString> fileHeaderRow = {
         "Magic Number", "Object type", "Architecture", "File version", "Entrypoint", "Program header offset",
         "Section header offset", "processor flags", "ELF header size", "PHeader table size", "PHeader entries",
@@ -45,7 +45,7 @@ private:
     Elf64_Ehdr fileHeader;
 
 
-    QVector<QString> sectionHeaderColum = {"Name"};
+    QVector<QString> sectionHeaderColumn = {"Name"};
     QVector<QString> sectionHeaderRow = {};
 };
 

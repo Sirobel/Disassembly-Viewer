@@ -54,6 +54,10 @@ public:
     std::vector<std::pair<uint64_t, std::string>> getSectionHeadersNames() override;
 
     std::vector<std::string> getSectionNames() override;
+
+    std::vector<std::pair<std::string, std::vector<char> > > getStringTables() override;
+
+    std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym>>> getSymbolTablesElf64() override;
 };
 
 

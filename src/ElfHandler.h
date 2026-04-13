@@ -51,6 +51,14 @@ public:
         return {};
     };
 
+    virtual std::vector<std::pair<std::string, std::vector<char> > > getStringTables() {
+        return {};
+    }
+
+    virtual std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > getSymbolTablesElf64() {
+        return {};
+    }
+
 private:
     std::string filePath;
 };

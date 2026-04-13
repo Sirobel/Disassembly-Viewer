@@ -50,6 +50,9 @@ add_executable(Disassembly-Viewer src/main.cpp
         gui/textviewer/infos/columinfo.cpp
         gui/textviewer/infos/columinfo.h
         gui/textviewer/infos/columinfo.ui
+        gui/textviewer/infos/treeinfo.cpp
+        gui/textviewer/infos/treeinfo.h
+        gui/textviewer/infos/treeinfo.ui
 )
 target_include_directories(Disassembly-Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/gui

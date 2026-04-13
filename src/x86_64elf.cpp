@@ -203,6 +203,30 @@ std::vector<std::string> x86_64elf::getSectionNames() {
     return names;
 }
 
+std::vector<std::pair<std::string, std::vector<char> > > x86_64elf::getStringTables() {
+    std::vector<std::pair<std::string, std::vector<char> > > erg;
+
+    for (const auto &[index,data]: stringTables) {
+        std::string test = &stringTable[sectionHeaders[index].sh_name];
+        erg.emplace_back(test, data);
+    }
+
+    return erg;
+}
+
+std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > x86_64elf::getSymbolTablesElf64() {
+    std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > symbols;
+
+    for (const auto &[index,data]: symbolTables) {
+        for (const auto &symbol: data) {
+            symbols.emplace_back(&stringTable[sectionHeaders[index].sh_name],
+                                 std::make_pair(&stringTables[sectionHeaders[index].sh_link][symbol.st_name], symbol));
+        }
+    }
+
+    return symbols;
+}
+
 std::vector<uint8_t> x86_64elf::getSection(const std::string &sectionName) {
     std::vector<uint8_t> data;
 
