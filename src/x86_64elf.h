@@ -26,6 +26,7 @@ private:
     std::unordered_map<uint32_t, std::vector<char> > stringTables;
     std::unordered_map<uint32_t, std::vector<Elf64_Sym> > symbolTables;
     std::map<uint64_t, std::string> symbolAddressTable;
+    std::unordered_map<uint64_t, std::vector<Elf64_Rela> > relaTables;
     std::unordered_map<std::string, Elf64_Shdr> segmentsIndex;
     std::mutex fileMutex;
 
@@ -51,13 +52,18 @@ public:
 
     std::vector<std::pair<uint64_t, uint64_t> > getLoadableSectionHeaders() override;
 
-    std::vector<std::pair<uint64_t, std::string>> getSectionHeadersNames() override;
+    std::vector<std::pair<uint64_t, std::string> > getSectionHeadersNames() override;
 
     std::vector<std::string> getSectionNames() override;
 
     std::vector<std::pair<std::string, std::vector<char> > > getStringTables() override;
 
-    std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym>>> getSymbolTablesElf64() override;
+    std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > getSymbolTablesElf64() override;
+
+    Elf64_Ehdr getElf64Header() override;
+
+    std::unordered_map<std::string, std::pair<std::string, std::vector<std::pair<std::string, Elf64_Rela> > > >
+    getRelaTables64() override;
 };
 
 

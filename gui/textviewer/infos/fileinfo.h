@@ -35,14 +35,22 @@ public:
 
     void setSymbolTables(const std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > &tables);
 
+    void setElfHeader(const Elf64_Ehdr &header);
+
+    void setRelocations(
+        const std::unordered_map<std::string, std::pair<std::string, std::vector<std::pair<std::string,
+            Elf64_Rela> > > > &tables);
+
 private:
     Ui::fileinfo *ui;
     columinfo *columInfo;
     treeinfo *treeInfo;
+    Elf64_Ehdr elfHeader;
 
     QVector<QString> sectionNames;
     QHash<QString, QVector<QString> > stringTables;
-    QHash<QString, QList<QPair<QString, Elf64_Sym> > > symbolTables;
+    QHash<QString, QList<QPair<QString, Elf64_Sym> > > symbol64Tables;
+    QHash<QString, QPair<QString, QList<QPair<QString, Elf64_Rela> > > > relocation64Tables;
 };
 
 

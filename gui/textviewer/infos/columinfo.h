@@ -25,7 +25,10 @@ public:
     void setDisplayInfo(int index);
 
     void setSectionNames(const QVector<QString> &names);
+
     void setElfHeader(const Elf64_Ehdr &header);
+
+    QList<QString> createElfHeaderValueList();
 
     ~columinfo() override;
 
@@ -38,9 +41,11 @@ private:
 
     QVector<QString> fileHeaderColumn = {"Field", "Value"};
     QVector<QString> fileHeaderRow = {
-        "Magic Number", "Object type", "Architecture", "File version", "Entrypoint", "Program header offset",
-        "Section header offset", "processor flags", "ELF header size", "PHeader table size", "PHeader entries",
-        "SHeader table size", "SHeader entries", "string table index"
+        "Magic Number", "File class", "Data encoding", "File version", "OS ABI", "ABI Version", "File type",
+        "architecture", "Object file version", "Entrypoint", "Program header offset", "Section header offset",
+        "processor flags",
+        "ELF header size", "PHeader table size", "PHeader entries", "SHeader table size", "SHeader entries",
+        "string table index"
     };
     Elf64_Ehdr fileHeader;
 

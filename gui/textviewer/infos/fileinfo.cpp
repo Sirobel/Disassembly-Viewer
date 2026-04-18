@@ -6,6 +6,8 @@
 
 #include "fileinfo.h"
 
+#include <qscreen_platform.h>
+
 #include "ui_fileinfo.h"
 #include "columinfo.h"
 
@@ -26,12 +28,14 @@ fileinfo::~fileinfo() {
 void fileinfo::changeWidget(const int index) {
     if (index == 0 || index == 1) {
         columInfo->setSectionNames(sectionNames);
+        columInfo->setElfHeader(elfHeader);
         columInfo->setDisplayInfo(index);
         ui->stackedWidget->setCurrentWidget(columInfo);
     }
-    if (index == 2 || index == 3) {
+    if (index == 2 || index == 3 || index == 4) {
         treeInfo->setStringTable(stringTables);
-        treeInfo->setSymbolTable(symbolTables);
+        treeInfo->setSymbolTable(symbol64Tables);
+        treeInfo->setRelocationTable(relocation64Tables);
         treeInfo->setDisplayInfo(index);
         ui->stackedWidget->setCurrentWidget(treeInfo);
     }
@@ -66,9 +70,29 @@ void fileinfo::setStringTables(const std::vector<std::pair<std::string, std::vec
 }
 
 void fileinfo::setSymbolTables(const std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > &tables) {
-    symbolTables.clear();
+    symbol64Tables.clear();
 
     for (const auto &[section,data]: tables) {
-        symbolTables[QString::fromStdString(section)].emplace_back(QString::fromStdString(data.first), data.second);
+        symbol64Tables[QString::fromStdString(section)].emplace_back(QString::fromStdString(data.first), data.second);
+    }
+}
+
+void fileinfo::setElfHeader(const Elf64_Ehdr &header) {
+    elfHeader = header;
+}
+
+void fileinfo::setRelocations(
+    const std::unordered_map<std::string, std::pair<std::string, std::vector<std::pair<std::string, Elf64_Rela> > > > &
+    tables) {
+    relocation64Tables.clear();
+
+    for (const auto &[section,data]: tables) {
+        QList<QPair<QString, Elf64_Rela> > relaList;
+        for (const auto &[name,rela]: data.second) {
+            ///relocation64Tables[QString::fromStdString(section)].emplace_back(QString::fromStdString(name), rela);
+            relaList.emplace_back(QString::fromStdString(name), rela);
+        }
+        relocation64Tables[QString::fromStdString(section)].second.append(relaList);
+        relocation64Tables[QString::fromStdString(section)].first = QString::fromStdString(data.first);
     }
 }

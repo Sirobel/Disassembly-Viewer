@@ -144,6 +144,8 @@ void textviewer::openFile(const QString &filePath) {
         fileInfo->setSectionNames(elf->getSectionNames());
         fileInfo->setStringTables(elf->getStringTables());
         fileInfo->setSymbolTables(elf->getSymbolTablesElf64());
+        fileInfo->setElfHeader(elf->getElf64Header());
+        fileInfo->setRelocations(elf->getRelaTables64());
     } catch (std::runtime_error &e) {
         QMessageBox::critical(this, tr("Error"), e.what());
     }

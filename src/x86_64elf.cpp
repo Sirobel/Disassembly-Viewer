@@ -103,6 +103,16 @@ x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
     for (const auto &segment: sectionHeaders) {
         segmentsIndex[&stringTable[segment.sh_name]] = segment;
     }
+
+    for (const auto &[key, value]: relaTables) {
+        std::cout << "Relocations for " << &stringTable[sectionHeaders[key].sh_name] << std::endl;
+        for (const auto &rela: value) {
+            const auto syms = symbolTables[sectionHeaders[key].sh_link][ELF64_R_SYM(rela.r_info)];
+            uint32_t strtabIndex = sectionHeaders[sectionHeaders[key].sh_link].sh_link;
+            std::cout << &stringTables[strtabIndex][syms.st_name] << std::endl;
+        }
+        std::cout << "end " << std::endl;
+    }
 }
 
 void x86_64elf::handeFileError(const std::string &errMsg) {
@@ -171,6 +181,7 @@ void x86_64elf::createSymbolTables() {
             for (const auto &relocation: relocations) {
                 const uint32_t symIndex = ELF64_R_SYM(relocation.r_info);
                 const uint32_t type = ELF64_R_TYPE(relocation.r_info);
+                relaTables[i].emplace_back(relocation);
 
                 const auto syms = symbolTables[sectionHeaders[i].sh_link][symIndex];
                 uint32_t strtabIndex = sectionHeaders[sectionHeaders[i].sh_link].sh_link;
@@ -225,6 +236,28 @@ std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > x86_64e
     }
 
     return symbols;
+}
+
+Elf64_Ehdr x86_64elf::getElf64Header() {
+    return *eHdr;
+}
+
+std::unordered_map<std::string, std::pair<std::string, std::vector<std::pair<std::string, Elf64_Rela> > > >
+x86_64elf::getRelaTables64() {
+    std::unordered_map<std::string, std::pair<std::string, std::vector<std::pair<std::string, Elf64_Rela> > > > erg;
+
+    for (const auto &[index,data]: relaTables) {
+        auto table = std::string(&stringTable[sectionHeaders[index].sh_name]);
+        std::vector<std::pair<std::string, Elf64_Rela> > list;
+        for (const auto &symbol: data) {
+            const auto syms = symbolTables[sectionHeaders[index].sh_link][ELF64_R_SYM(symbol.r_info)];
+            uint32_t strtabIndex = sectionHeaders[sectionHeaders[index].sh_link].sh_link;
+            list.emplace_back(&stringTables[strtabIndex][syms.st_name], symbol);
+        }
+        erg[table] = std::make_pair(&stringTable[sectionHeaders[sectionHeaders[index].sh_link].sh_name], list);
+    }
+
+    return erg;
 }
 
 std::vector<uint8_t> x86_64elf::getSection(const std::string &sectionName) {

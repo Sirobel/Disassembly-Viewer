@@ -86,6 +86,11 @@ void windowhandler::setupTextViewerMenubar() {
     connect(symbolTableAction, &QAction::triggered, [this]() {
         textViewer->showFileInfo(3);
     });
+
+    const auto relocationTableAction = infoMenu->addAction("Relocations");
+    connect(relocationTableAction, &QAction::triggered, [this]() {
+        textViewer->showFileInfo(4);
+    });
 }
 
 void windowhandler::setupRecentFilesMenubar() {

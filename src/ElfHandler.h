@@ -9,6 +9,7 @@
 #include <string>
 #include <elf.h>
 #include <fstream>
+#include <unordered_map>
 #include <vector>
 
 class ElfHandler {
@@ -56,6 +57,15 @@ public:
     }
 
     virtual std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > getSymbolTablesElf64() {
+        return {};
+    }
+
+    virtual std::unordered_map<std::string, std::pair<std::string, std::vector<std::pair<std::string, Elf64_Rela> > > >
+    getRelaTables64() {
+        return {};
+    }
+
+    virtual Elf64_Ehdr getElf64Header() {
         return {};
     }
 

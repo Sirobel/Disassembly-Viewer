@@ -27,6 +27,9 @@ void treeinfo::setDisplayInfo(const int index) {
         case 3:
             showSymbolTables();
             break;
+        case 4:
+            showRelocationTables();
+            break;
         default:
             break;
     }
@@ -38,6 +41,10 @@ void treeinfo::setStringTable(const QHash<QString, QVector<QString> > &table) {
 
 void treeinfo::setSymbolTable(const QHash<QString, QList<QPair<QString, Elf64_Sym> > > &table) {
     symbolTables = table;
+}
+
+void treeinfo::setRelocationTable(const QHash<QString, QPair<QString, QList<QPair<QString, Elf64_Rela> > > > &tables) {
+    relocationTables = tables;
 }
 
 void treeinfo::showStringTables() {
@@ -83,8 +90,6 @@ void treeinfo::showSymbolTables() {
                         return "common data object";
                     case STT_TLS:
                         return "thread local data object";
-                    case STT_NUM:
-                        return "number";
                     case STT_LOOS:
                         return "start of os-specific/ GNU indirect code object";
                     case STT_HIOS:
@@ -106,8 +111,6 @@ void treeinfo::showSymbolTables() {
                         return "global";
                     case STB_WEAK:
                         return "weak";
-                    case STB_NUM:
-                        return "number";
                     case STB_LOOS:
                         return "start of OS-specific / GNU unique";
                     case STB_HIOS:
@@ -143,5 +146,34 @@ void treeinfo::showSymbolTables() {
 
         ui->treeWidget->addTopLevelItem(item.get());
         [[maybe_unused]] auto a = item.release();
+    }
+}
+
+void treeinfo::showRelocationTables() {
+    ui->treeWidget->setColumnCount(static_cast<int>(relocationTableColumn.count()));
+    ui->treeWidget->setHeaderLabels(relocationTableColumn);
+
+    for (const auto &[section, strings]: relocationTables.asKeyValueRange()) {
+        auto item = std::make_unique<QTreeWidgetItem>(QStringList{section});
+        auto symbolTable = std::make_unique<QTreeWidgetItem>(QStringList{strings.first});
+        item->addChild(symbolTable.get());
+
+        for (const auto &[string, rela]: strings.second) {
+            QStringList names = {string};
+            names.append(QString::number(rela.r_offset));
+            names.append(QString::number(rela.r_addend));
+            ////for later in the elf.h under /* AMD x86-64 relocations.  */
+            names.append(QString::number(ELF64_R_TYPE(rela.r_info)));
+            names.append(QString::number(ELF64_R_SYM(rela.r_info)));
+            names.append(QString::number(rela.r_offset));
+
+            auto child = std::make_unique<QTreeWidgetItem>(names);
+            symbolTable->addChild(child.get());
+            [[maybe_unused]] auto b = child.release();
+        }
+
+        ui->treeWidget->addTopLevelItem(item.get());
+        [[maybe_unused]] auto a = item.release();
+        [[maybe_unused]] auto b = symbolTable.release();
     }
 }

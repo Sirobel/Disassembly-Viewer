@@ -30,18 +30,24 @@ public:
 
     void setSymbolTable(const QHash<QString, QList<QPair<QString, Elf64_Sym> > > &table);
 
+    void setRelocationTable(const QHash<QString, QPair<QString, QList<QPair<QString, Elf64_Rela> > > > &tables);
+
 private:
     Ui::treeinfo *ui;
     QHash<QString, QVector<QString> > stringTables;
-
     QVector<QString> stringTableColumn = {"Sections"};
 
     QHash<QString, QList<QPair<QString, Elf64_Sym> > > symbolTables;
     QVector<QString> symbolTableColumn = {"Sections", "Type", "Binding", "Visibility"};
 
+   QHash<QString, QPair<QString, QList<QPair<QString, Elf64_Rela> > > > relocationTables;
+    QVector<QString> relocationTableColumn = {"Section", "Address","Addend", "Type", "Symbol index"};
+
     void showStringTables();
 
     void showSymbolTables();
+
+    void showRelocationTables();
 };
 
 
