@@ -53,6 +53,11 @@ add_executable(Disassembly-Viewer src/main.cpp
         gui/textviewer/infos/treeinfo.cpp
         gui/textviewer/infos/treeinfo.h
         gui/textviewer/infos/treeinfo.ui
+        src/Demangler.h
+        src/cppRustDemangler.cpp
+        src/cppRustDemangler.h
+        gui/textviewer/DisasmHighlighter.cpp
+        gui/textviewer/DisasmHighlighter.h
 )
 target_include_directories(Disassembly-Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/gui

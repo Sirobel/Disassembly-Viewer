@@ -22,6 +22,9 @@
 #include <QKeySequence>
 #include <QShortcut>
 #include <QInputDialog>
+#include <QMouseEvent>
+#include <qregularexpression.h>
+#include "textviewer/DisasmHighlighter.h"
 
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer),
@@ -36,6 +39,8 @@ textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer
 
     fileInfo = new fileinfo(this);
     fileInfo->close();
+
+    new DisasmHighlighter(ui->textBrowser->document());
 }
 
 void textviewer::openFile(const QString &filePath) {
@@ -87,10 +92,8 @@ void textviewer::openFile(const QString &filePath) {
 
         int index = 0;
         for (auto &f: futures) {
-            text += "<pre>";
             text += "Disassembly of section " + sections[index++] + "\n";
             text += QString::fromStdString(f.get()) + "\n";
-            text += "</pre>";
         }
 
         std::chrono::duration<double, std::milli> duration = clock::now() - sectionTime;
@@ -98,7 +101,7 @@ void textviewer::openFile(const QString &filePath) {
                 << "start setHTML" << std::endl;
         sectionTime = std::chrono::high_resolution_clock::now();
 
-        ui->textBrowser->setHtml(text);
+        ui->textBrowser->setPlainText(text);
 
         duration = clock::now() - sectionTime;
         std::cout << "finished setHTML in " << duration.count() << std::endl
@@ -136,16 +139,18 @@ void textviewer::openFile(const QString &filePath) {
         std::cout << "finished memBar in " << duration.count() << std::endl;
         sectionTime = std::chrono::high_resolution_clock::now();
 
-        const std::chrono::duration<double, std::milli> ms = clock::now() - start;
-        elapsedTime = ms.count();
-
-        std::cout << "complete time :" << elapsedTime << std::endl;
-
         fileInfo->setSectionNames(elf->getSectionNames());
         fileInfo->setStringTables(elf->getStringTables());
         fileInfo->setSymbolTables(elf->getSymbolTablesElf64());
         fileInfo->setElfHeader(elf->getElf64Header());
         fileInfo->setRelocations(elf->getRelaTables64());
+
+        generateAddressLookup();
+
+        const std::chrono::duration<double, std::milli> ms = clock::now() - start;
+        elapsedTime = ms.count();
+
+        std::cout << "complete time :" << elapsedTime << std::endl;
     } catch (std::runtime_error &e) {
         QMessageBox::critical(this, tr("Error"), e.what());
     }
@@ -153,7 +158,7 @@ void textviewer::openFile(const QString &filePath) {
 
 void textviewer::refresh() {
     const QString css = QString(R"(
-pre {
+p {
     font-size: %1px;
     font-family: monospace;
     padding: 6px;
@@ -173,6 +178,9 @@ pre {
 
     ui->textBrowser->document()->setDefaultStyleSheet(css);
     ui->memBar->refresh();
+    ui->textBrowser->setMouseTracking(true);
+    ui->textBrowser->viewport()->setMouseTracking(true);
+    ui->textBrowser->viewport()->installEventFilter(this);
 }
 
 void textviewer::showFileInfo(const int index) {
@@ -186,26 +194,6 @@ void textviewer::showFileInfo(const int index) {
 
 textviewer::~textviewer() {
     delete ui;
-}
-
-void textviewer::on_textBrowser_anchorClicked(const QUrl &arg1) {
-    if (!arg1.isRelative()) {
-        QDesktopServices::openUrl(arg1);
-        return;
-    }
-
-    auto pos = arg1.path();
-    std::cout << "clicked " << pos.toStdString() << std::endl;
-    QTextCursor cursor = ui->textBrowser->document()->find(pos + ":");
-
-    if (!cursor.isNull()) {
-        std::cout << "jumped to" << pos.toStdString() << std::endl;
-        ui->textBrowser->setTextCursor(cursor);
-        ui->textBrowser->ensureCursorVisible();
-        return;
-    }
-
-    QToolTip::showText(QCursor::pos(), "Link target not in Textview");
 }
 
 void textviewer::toggleSearchbar() {
@@ -263,6 +251,87 @@ void textviewer::updateSearchLabel() {
         );
 }
 
+void textviewer::jumpToTarget(const QString &target) {
+    if (!target.startsWith("0x")) {
+        QDesktopServices::openUrl("https://www.felixcloutier.com/x86/" + target);
+        return;
+    }
+
+
+    if (const auto address = addressLookup.find(target); address != addressLookup.end()) {
+        std::cout << "jumped to" << target.toStdString() << std::endl;
+        QTextCursor cursor(ui->textBrowser->document()->findBlockByNumber(address.value()));
+        cursor.select(QTextCursor::LineUnderCursor);
+        ui->textBrowser->setTextCursor(cursor);
+        ui->textBrowser->ensureCursorVisible();
+
+        return;
+    }
+
+    QToolTip::showText(QCursor::pos(), "Link target not in Textview");
+}
+
+void textviewer::generateAddressLookup() {
+    addressLookup.clear();
+
+    const QTextDocument *doc = ui->textBrowser->document();
+
+    for (QTextBlock block = doc->begin(); block != doc->end(); block = block.next()) {
+        if (const QString &text = block.text(); text.size() > 2 && text.startsWith("\t0x")) {
+            if (const long long endPos = text.indexOf(':'); endPos > 0) {
+                QString addr = text.left(endPos);
+                addr.remove("\t");
+                addressLookup[addr] = block.blockNumber();
+            }
+        }
+    }
+}
+
+bool textviewer::eventFilter(QObject *obj, QEvent *event) {
+    if (obj != ui->textBrowser->viewport() || event->type() != QEvent::MouseButtonRelease)
+        return QWidget::eventFilter(obj, event);
+    const auto *me = dynamic_cast<QMouseEvent *>(event);
+    QTextCursor cursor = ui->textBrowser->cursorForPosition(me->pos());
+    QTextCursor cursor2 = ui->textBrowser->cursorForPosition(me->pos());
+
+
+    // Get the clicked position within the line
+    int clickedCol = cursor.positionInBlock();
+
+    // Select the entire line
+    cursor.select(QTextCursor::LineUnderCursor);
+    cursor2.select(QTextCursor::WordUnderCursor);
+    QString line = cursor.selectedText();
+
+    QString line2 = cursor2.selectedText();
+
+    if (line2.startsWith("\u200c") && line2.endsWith("\u200c")) {
+        line2.remove("\u200c");
+        std::cout << "clicked " << line2.toStdString() << std::endl;
+        jumpToTarget(line2);
+        return true;
+    }
+
+    // Find "target 0x..." pattern and check if click was on it
+    static const QRegularExpression targetRx(R"(#target\s+(0x[0-9a-fA-F]+)(?:\s+<(.+)>)?)");
+    QRegularExpressionMatchIterator it = targetRx.globalMatch(line);
+
+    while (it.hasNext()) {
+        QRegularExpressionMatch match = it.next();
+        const long long start = match.capturedStart(0);
+        if (const long long end = match.capturedEnd(0); clickedCol >= start && clickedCol < end) {
+            const QString address = match.captured(1);
+            const QString symbol = match.captured(2); // may be empty
+            qDebug() << "Clicked:" << address << symbol;
+            jumpToTarget(address);
+            return true;
+        }
+    }
+
+    return QWidget::eventFilter(obj, event);
+}
+
+
 void textviewer::on_searchLineEdit_textChanged(const QString &text) {
     ui->textBrowser->find(text);
     totalMatches = countSearchResults(text);
@@ -280,7 +349,9 @@ void textviewer::on_previousSearchPushButton_clicked() {
         ui->textBrowser->moveCursor(QTextCursor::End);
         ui->textBrowser->find(ui->searchLineEdit->text(), QTextDocument::FindBackward);
     }
-    currentMatch = findCurrentMatch(ui->searchLineEdit->text());
+    currentMatch--;
+    if (currentMatch < 1)
+        currentMatch = totalMatches;
 
     updateSearchLabel();
 }
@@ -295,7 +366,10 @@ void textviewer::on_nextSearchPushButton_clicked() {
         ui->textBrowser->moveCursor(QTextCursor::Start);
         ui->textBrowser->find(ui->searchLineEdit->text());
     }
-    currentMatch = findCurrentMatch(ui->searchLineEdit->text());
+    currentMatch++;
+    if (currentMatch > totalMatches)
+        currentMatch = 1;
+
 
     updateSearchLabel();
 }

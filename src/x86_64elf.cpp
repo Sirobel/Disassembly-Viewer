@@ -11,10 +11,12 @@
 #include <vector>
 #include <string>
 #include <format>
-#include <qguiapplication_platform.h>
+
+#include "cppRustDemangler.h"
 
 x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
     currentFile.open(path);
+    demangler = std::make_unique<cppRustDemangler>();
 
     if (!currentFile.is_open()) {
         handeFileError("Could not open file: " + path);
@@ -165,7 +167,7 @@ void x86_64elf::createSymbolTables() {
                 if (symbol.st_value == 0 && symbol.st_shndx != SHN_ABS)
                     continue;
 
-                symbolAddressTable[symbol.st_value] = std::string(
+                symbolAddressTable[symbol.st_value] = demangler->demangle(
                     &stringTables[sectionHeaders[i].sh_link][symbol.st_name]);
             }
         } else if (sectionHeaders[i].sh_type == SHT_RELA) {
@@ -187,7 +189,7 @@ void x86_64elf::createSymbolTables() {
                 uint32_t strtabIndex = sectionHeaders[sectionHeaders[i].sh_link].sh_link;
 
 
-                symbolAddressTable[relocation.r_offset] = std::string(&stringTables[strtabIndex][syms.st_name]);
+                symbolAddressTable[relocation.r_offset] = demangler->demangle(&stringTables[strtabIndex][syms.st_name]);
             }
         }
     }

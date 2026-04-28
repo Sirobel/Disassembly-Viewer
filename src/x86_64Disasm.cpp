@@ -27,18 +27,17 @@ std::string x86_64Disasm::disassemblePart(const std::vector<uint8_t> &machineCod
         }
 
         if (auto sectionName = elf.lookupSymbol(insn[i].address); !sectionName.empty()) {
-            oss << "section &lt;" << sectionName << "&gt;" << std::endl;
+            oss << "section <" << sectionName << ">" << std::endl;
         }
         oss << "\t";
 
-        oss << "0x" << std::right << std::setw(6) << std::setfill('0') << std::hex << insn[i].address << ":    ";
+        oss << "0x" << std::right << std::hex << insn[i].address << ":    ";
         std::ostringstream bytes;
         for (int j = 0; j < insn[i].size; ++j) {
             bytes << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(insn[i].bytes[j]) << " ";
         }
 
-        oss << "<a href=\"" << baseUrl << insn[i].mnemonic << "\">" << std::left << std::setfill(' ') << std::setw(12)
-                << insn[i].mnemonic << "</a>" << std::setw(12) << insn[i].op_str;
+        oss << bytes.str() << std::left << std::setfill(' ') << std::setw(12) << ("\u200c" + std::string(insn[i].mnemonic) + "\u200c") << std::setw(12) << insn[i].op_str;
 
         for (int j = 0; j < detail->x86.op_count; j++) {
             const auto &op = detail->x86.operands[j];
@@ -46,18 +45,13 @@ std::string x86_64Disasm::disassemblePart(const std::vector<uint8_t> &machineCod
             if (op.type == X86_OP_MEM && op.mem.base == X86_REG_RIP) {
                 oss << "\t#target ";
                 uint64_t targetAddress = insn[i].address + insn[i].size + op.mem.disp;
-                oss << "<a href=\"0x" << std::hex << std::right << std::setw(6) << std::setfill('0') << targetAddress <<
-                        "\">0x";
-                oss << std::hex << targetAddress << " &lt;" << elf.lookupRangeSymbol(targetAddress) << "&gt;";
-                oss << "</a>";
+                oss << "0x" << std::hex << targetAddress << " <" << elf.lookupRangeSymbol(targetAddress) << ">";
                 break;
             }
             if (hasJCOperation) {
                 oss << "\t#target ";
                 if (op.type == X86_OP_IMM) {
-                    oss << "<a href=\"0x" << std::hex << std::right << std::setw(6) << std::setfill('0') << op.imm <<
-                            "\">0x" << std::hex << op.imm << "&lt;" << elf.lookupRangeSymbol(op.imm) <<
-                            "&gt;" << "</a>";
+                    oss << "0x" << std::hex << op.imm << " <" << elf.lookupRangeSymbol(op.imm) << ">";
                     break;
                 }
                 if (op.type == X86_OP_REG) {
@@ -73,7 +67,7 @@ std::string x86_64Disasm::disassemblePart(const std::vector<uint8_t> &machineCod
     cs_free(insn, count);
     cs_close(&handle);
 
-    return "<pre>" + out + "</pre>";
+    return out;
 }
 
 x86_64Disasm::~x86_64Disasm() = default;

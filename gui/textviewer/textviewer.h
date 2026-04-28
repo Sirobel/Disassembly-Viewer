@@ -25,6 +25,8 @@ class textviewer : public QWidget {
     Q_OBJECT
 
 public:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
     explicit textviewer(QWidget *parent = nullptr);
 
     void openFile(const QString &filePath);
@@ -37,8 +39,6 @@ public:
     ~textviewer() override;
 
 private slots:
-    void on_textBrowser_anchorClicked(const QUrl &arg1);
-
     void on_searchLineEdit_textChanged(const QString &text);
 
     void on_previousSearchPushButton_clicked();
@@ -50,6 +50,7 @@ private:
     QSettings settings;
     std::unique_ptr<ElfHandler> elf;
     std::vector<QString> sectionHeaders;
+    QHash<QString, int> addressLookup;
     QShortcut *shortcut;
     int totalMatches = 0;
     int currentMatch = 0;
@@ -63,6 +64,9 @@ private:
     int findCurrentMatch(const QString &text);
 
     void updateSearchLabel();
+
+    void jumpToTarget(const QString &target);
+    void generateAddressLookup();
 };
 
 

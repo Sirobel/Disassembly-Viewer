@@ -9,8 +9,11 @@
 #include <string>
 #include <elf.h>
 #include <fstream>
+#include <memory>
 #include <unordered_map>
 #include <vector>
+
+#include "Demangler.h"
 
 class ElfHandler {
 public:
@@ -67,6 +70,13 @@ public:
 
     virtual Elf64_Ehdr getElf64Header() {
         return {};
+    }
+
+protected:
+    std::unique_ptr<Demangler> demangler;
+
+    std::string demangle(const std::string &name) {
+        return demangler->demangle(name);
     }
 
 private:
