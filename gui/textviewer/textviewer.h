@@ -10,6 +10,7 @@
 #include <QSettings>
 #include <QShortcut>
 
+#include "DisasmModel.h"
 #include "infos/fileinfo.h"
 
 
@@ -25,8 +26,6 @@ class textviewer : public QWidget {
     Q_OBJECT
 
 public:
-    bool eventFilter(QObject *obj, QEvent *event) override;
-
     explicit textviewer(QWidget *parent = nullptr);
 
     void openFile(const QString &filePath);
@@ -45,15 +44,18 @@ private slots:
 
     void on_nextSearchPushButton_clicked();
 
+    void on_closeSearchButton_clicked();
+
 private:
     Ui::textviewer *ui;
     QSettings settings;
     std::unique_ptr<ElfHandler> elf;
     std::vector<QString> sectionHeaders;
-    QHash<QString, int> addressLookup;
     QShortcut *shortcut;
     int totalMatches = 0;
     int currentMatch = 0;
+    QTimer *searchTimer;
+    DisasmModel *model;
 
     fileinfo *fileInfo;
 
@@ -65,8 +67,14 @@ private:
 
     void updateSearchLabel();
 
+    void search();
+
     void jumpToTarget(const QString &target);
-    void generateAddressLookup();
+
+    void handleLink(const QString &link);
+
+public:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 };
 
 

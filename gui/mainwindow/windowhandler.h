@@ -42,7 +42,7 @@ private:
 
     void updateMenubar(int index);
 
-    void openRecentFile(const QListWidgetItem *item);
+    void openRecentFile(const QString &path);
 
     void openFile();
 };

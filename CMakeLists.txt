@@ -16,6 +16,27 @@ find_package(Qt6 COMPONENTS
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CAPSTONE REQUIRED capstone)
 
+include(ExternalProject)
+set(RUSTC_DEMANGLE_SRC "${CMAKE_SOURCE_DIR}/third_party/rustc-demangle")
+set(RUSTC_DEMANGLE_LIB "${RUSTC_DEMANGLE_SRC}/target/release/librustc_demangle.a")
+
+ExternalProject_Add(rustc_demangle_build
+        SOURCE_DIR      "${RUSTC_DEMANGLE_SRC}"
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND   cargo build -p rustc-demangle-capi --release
+        --manifest-path "${RUSTC_DEMANGLE_SRC}/Cargo.toml"
+        INSTALL_COMMAND ""
+        BUILD_IN_SOURCE TRUE
+        BUILD_BYPRODUCTS "${RUSTC_DEMANGLE_LIB}"
+)
+
+add_library(rustc_demangle STATIC IMPORTED GLOBAL)
+add_dependencies(rustc_demangle rustc_demangle_build)
+set_target_properties(rustc_demangle PROPERTIES
+        IMPORTED_LOCATION             "${RUSTC_DEMANGLE_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${RUSTC_DEMANGLE_SRC}/crates/capi/include"
+)
+
 add_executable(Disassembly-Viewer src/main.cpp
         gui/mainwindow/windowhandler.cpp
         gui/mainwindow/windowhandler.h
@@ -56,8 +77,10 @@ add_executable(Disassembly-Viewer src/main.cpp
         src/Demangler.h
         src/cppRustDemangler.cpp
         src/cppRustDemangler.h
-        gui/textviewer/DisasmHighlighter.cpp
-        gui/textviewer/DisasmHighlighter.h
+        gui/textviewer/DisasmModel.cpp
+        gui/textviewer/DisasmModel.h
+        gui/textviewer/DisasmDelegate.cpp
+        gui/textviewer/DisasmDelegate.h
 )
 target_include_directories(Disassembly-Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/gui
@@ -71,4 +94,7 @@ target_link_libraries(Disassembly-Viewer
         Qt::Gui
         Qt::Widgets
         capstone
+        rustc_demangle
+        pthread
+        dl
 )

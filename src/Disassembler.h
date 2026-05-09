@@ -7,18 +7,23 @@
 
 #pragma once
 #include <ElfHandler.h>
+#include <textviewer/DisasmModel.h>
 
 class Disassembler {
 public:
     virtual ~Disassembler() = default;
 
-    explicit Disassembler(ElfHandler &elfHandler) : elf(elfHandler) {}
+    explicit Disassembler(ElfHandler &elfHandler) : elf(elfHandler) {
+    }
 
     virtual std::string disassemblePart(const std::vector<uint8_t> &machineCode, uint64_t startingAddress) {
         return "";
     }
 
-
+    virtual QVector<DisasmModel::Section> disassemblePartToSections(const std::vector<uint8_t> &machineCode,
+                                                                    uint64_t startingAddress) {
+        return {};
+    }
 
 protected:
     ElfHandler &elf;

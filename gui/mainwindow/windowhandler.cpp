@@ -30,7 +30,16 @@ windowhandler::windowhandler(QWidget *parent) : QMainWindow(parent), ui(new Ui::
     stack->setCurrentWidget(recentFiles);
     updateMenubar(0);
 
-    connect(recentFiles->getListWidget(), &QListWidget::itemClicked, this, &windowhandler::openRecentFile);
+    settings = new mainsettings(this);
+    connect(settings, &mainsettings::SavedSettings, this, [this]() {
+        recentFiles->refresh();
+        textViewer->refresh();
+    });
+    settings->close();
+
+    connect(recentFiles->getListWidget(), &QListWidget::itemClicked, this, [this](const QListWidgetItem *item) {
+        openRecentFile(item->text());
+    });
 }
 
 windowhandler::~windowhandler() {
@@ -46,14 +55,6 @@ void windowhandler::setupTextViewerMenubar() {
 
     const auto settingsAction = fileMenu->addAction("Settings");
     connect(settingsAction, &QAction::triggered, [this]() {
-        if (!settings) {
-            settings = new mainsettings(this);
-            connect(settings, &mainsettings::SavedSettings, this, [this]() {
-                recentFiles->refresh();
-                textViewer->refresh();
-            });
-        }
-
         settings->setWindowFlag(Qt::Window);
         settings->setWindowModality(Qt::ApplicationModal);
         settings->show();
@@ -101,13 +102,6 @@ void windowhandler::setupRecentFilesMenubar() {
 
     const auto settingsAction = fileMenu->addAction("Settings");
     connect(settingsAction, &QAction::triggered, [this]() {
-        if (!settings) {
-            settings = new mainsettings(this);
-            connect(settings, &mainsettings::SavedSettings, this, [this]() {
-                recentFiles->refresh();
-            });
-        }
-
         settings->setWindowFlag(Qt::Window);
         settings->setWindowModality(Qt::ApplicationModal);
         settings->show();
@@ -129,8 +123,7 @@ void windowhandler::updateMenubar(const int index) {
     }
 }
 
-void windowhandler::openRecentFile(const QListWidgetItem *item) {
-    const QString path = item->text();
+void windowhandler::openRecentFile(const QString &path) {
     recentFiles->addFiletoList(path);
     stack->setCurrentWidget(textViewer);
     textViewer->openFile(path);

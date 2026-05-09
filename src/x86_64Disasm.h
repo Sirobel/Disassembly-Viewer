@@ -7,7 +7,7 @@
 #include "Disassembler.h"
 
 
-class x86_64Disasm : public Disassembler{
+class x86_64Disasm : public Disassembler {
 public:
     explicit x86_64Disasm(ElfHandler &elfHandler)
         : Disassembler(elfHandler) {
@@ -16,9 +16,12 @@ public:
     std::string disassemblePart(const std::vector<uint8_t> &machineCode, uint64_t startingAddress) override;
 
     ~x86_64Disasm() override;
+
+    QVector<DisasmModel::Section> disassemblePartToSections(const std::vector<uint8_t> &machineCode,
+                                                        uint64_t startingAddress) override;
+
 private:
     std::string baseUrl = "https://www.felixcloutier.com/x86/";
-
 };
 
 

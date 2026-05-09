@@ -17,22 +17,30 @@
 #include <future>
 #include <semaphore>
 #include <QDesktopServices>
-#include <qstyle.h>
 #include <QToolTip>
 #include <QKeySequence>
 #include <QShortcut>
 #include <QInputDialog>
 #include <QMouseEvent>
 #include <qregularexpression.h>
-#include "textviewer/DisasmHighlighter.h"
+#include <QScrollBar>
+
+#include "DisasmDelegate.h"
+#include "textviewer/DisasmModel.h"
 
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer),
                                           settings("Sirobel", "Disassembly-Viewer") {
     ui->setupUi(this);
-    refresh();
     ui->searchGroupBox->hide();
+    model = new DisasmModel(this);
+    ui->treeView->setModel(model);
+    ui->treeView->setItemDelegate(new DisasmDelegate(ui->treeView));
+    ui->treeView->setRootIsDecorated(true);
+    ui->treeView->header()->hide();
+    ui->treeView->viewport()->installEventFilter(this);
 
+    ui->textBrowser->hide();
 
     shortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
     connect(shortcut, &QShortcut::activated, this, &textviewer::toggleSearchbar);
@@ -40,7 +48,19 @@ textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer
     fileInfo = new fileinfo(this);
     fileInfo->close();
 
-    new DisasmHighlighter(ui->textBrowser->document());
+
+    searchTimer = new QTimer(this);
+    searchTimer->setSingleShot(true);
+    connect(searchTimer, &QTimer::timeout, this, &textviewer::search);
+
+    ui->textBrowser->setMouseTracking(true);
+    ui->textBrowser->viewport()->setMouseTracking(true);
+    ui->textBrowser->viewport()->installEventFilter(this);
+    ui->textBrowser->setLineWrapMode(QPlainTextEdit::NoWrap);
+    ui->textBrowser->setUndoRedoEnabled(false);
+
+
+    refresh();
 }
 
 void textviewer::openFile(const QString &filePath) {
@@ -67,41 +87,34 @@ void textviewer::openFile(const QString &filePath) {
         QString text;
 
         std::vector<std::string> sections = {".init", ".plt", ".plt.got", ".plt.sec", ".text", ".fini"};
-        //sections = {".plt.got"};
+        sections = {".text"};
         std::vector<std::future<std::string> > futures;
         std::counting_semaphore<4> sem(4);
+        QVector<DisasmModel::Section> section;
 
 
         for (const std::string &sec: sections) {
-            sem.acquire();
-            futures.push_back(std::async(std::launch::async, [&sem, this, &disassembler, sec] {
-                struct Releaser {
-                    std::counting_semaphore<4> &s;
-
-                    explicit Releaser(std::counting_semaphore<4> &sem) : s(sem) {
-                    }
-
-                    ~Releaser() { s.release(); }
-                } releaser(sem);
-
-                auto data = this->elf->getSection(sec);
-                auto ret = disassembler.disassemblePart(data, this->elf->getAddressOfSegment(sec));
-                return ret;
-            }));
+            const auto data = elf->getSection(sec);
+            auto s = disasm.disassemblePart(data, elf->getAddressOfSegment(sec));
+            text += "Disassembly of Section " + QString::fromStdString(sec) + "\n";
+            text += QString::fromStdString(s) + "\n";
+            section.append(disasm.disassemblePartToSections(data, elf->getAddressOfSegment(sec)));
         }
 
-        int index = 0;
-        for (auto &f: futures) {
-            text += "Disassembly of section " + sections[index++] + "\n";
-            text += QString::fromStdString(f.get()) + "\n";
-        }
 
         std::chrono::duration<double, std::milli> duration = clock::now() - sectionTime;
         std::cout << "finished disassembly in " << duration.count() << std::endl
                 << "start setHTML" << std::endl;
         sectionTime = std::chrono::high_resolution_clock::now();
 
+        //ui->textBrowser->hide();
         ui->textBrowser->setPlainText(text);
+        model->setSections(section);
+        ui->treeView->expandAll();
+        ui->treeView->resizeColumnToContents(1);
+        ui->treeView->resizeColumnToContents(2);
+        ui->treeView->resizeColumnToContents(3);
+        ui->treeView->resizeColumnToContents(4);
 
         duration = clock::now() - sectionTime;
         std::cout << "finished setHTML in " << duration.count() << std::endl
@@ -145,7 +158,6 @@ void textviewer::openFile(const QString &filePath) {
         fileInfo->setElfHeader(elf->getElf64Header());
         fileInfo->setRelocations(elf->getRelaTables64());
 
-        generateAddressLookup();
 
         const std::chrono::duration<double, std::milli> ms = clock::now() - start;
         elapsedTime = ms.count();
@@ -157,30 +169,13 @@ void textviewer::openFile(const QString &filePath) {
 }
 
 void textviewer::refresh() {
-    const QString css = QString(R"(
-p {
-    font-size: %1px;
-    font-family: monospace;
-    padding: 6px;
-    color: %3;
-}
- a {
-    color: %2;
-    font-size: %1;
-    text-decoration: %4;
-}
-)")
-            .arg(settings.value("fontSize", 16).toInt())
-            .arg(settings.value("linkColor", "#0000EE").toString())
-            .arg(settings.value("textColor", "#000000").toString())
-            .arg(settings.value("linkUnderscore", Qt::Unchecked).toInt() == Qt::Checked ? "underline" : "none");
-
-
-    ui->textBrowser->document()->setDefaultStyleSheet(css);
+    // .arg(settings.value("linkUnderscore", Qt::Unchecked).toInt() == Qt::Checked ? "underline" : "none");
     ui->memBar->refresh();
-    ui->textBrowser->setMouseTracking(true);
-    ui->textBrowser->viewport()->setMouseTracking(true);
-    ui->textBrowser->viewport()->installEventFilter(this);
+
+    QFont font = ui->textBrowser->font();
+    font.setPointSize(settings.value("fontSize", 16).toInt());
+    ui->textBrowser->setStyleSheet("color :" + settings.value("textColor", "#000000").toString() + ";");
+    ui->textBrowser->setFont(font);
 }
 
 void textviewer::showFileInfo(const int index) {
@@ -208,16 +203,14 @@ int textviewer::countSearchResults(const QString &text) {
     if (text.isEmpty())
         return 0;
 
-    QTextDocument *doc = ui->textBrowser->document();
-    QTextCursor cursor(doc);
+    QString content = ui->textBrowser->toPlainText();
     int count = 0;
+    int pos = 0;
 
-    while (!cursor.isNull() && !cursor.atEnd()) {
-        cursor = doc->find(text, cursor);
-        if (!cursor.isNull())
-            count++;
+    while ((pos = content.indexOf(text, pos, Qt::CaseInsensitive)) != -1) {
+        count++;
+        pos += text.length();
     }
-
     return count;
 }
 
@@ -251,93 +244,74 @@ void textviewer::updateSearchLabel() {
         );
 }
 
+void textviewer::search() {
+    const QString text = ui->searchLineEdit->text();
+    ui->textBrowser->find(text);
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    totalMatches = countSearchResults(text);
+    currentMatch = findCurrentMatch(text);
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() <<
+            "[ms]" << std::endl;
+
+    updateSearchLabel();
+}
+
 void textviewer::jumpToTarget(const QString &target) {
+    std::cout << "Jumping to " << target.toStdString() << std::endl;
+
     if (!target.startsWith("0x")) {
         QDesktopServices::openUrl("https://www.felixcloutier.com/x86/" + target);
         return;
     }
 
-
-    if (const auto address = addressLookup.find(target); address != addressLookup.end()) {
-        std::cout << "jumped to" << target.toStdString() << std::endl;
-        QTextCursor cursor(ui->textBrowser->document()->findBlockByNumber(address.value()));
-        cursor.select(QTextCursor::LineUnderCursor);
-        ui->textBrowser->setTextCursor(cursor);
-        ui->textBrowser->ensureCursorVisible();
-
-        return;
+    const auto index = model->findAddress(target);
+    if (!index.isValid()) {
+        QTimer::singleShot(100, this, []() {
+            QToolTip::showText(QCursor::pos(), "Link target not in Textview");
+        });
     }
 
-    QToolTip::showText(QCursor::pos(), "Link target not in Textview");
+    ui->treeView->scrollTo(index, QAbstractItemView::PositionAtTop);
+    ui->treeView->selectionModel()->setCurrentIndex(
+        index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
-void textviewer::generateAddressLookup() {
-    addressLookup.clear();
+void textviewer::handleLink(const QString &link) {
+    if (link.isEmpty())
+        return;
 
-    const QTextDocument *doc = ui->textBrowser->document();
+    static const QRegularExpression targetRx(R"(#target\s+(0x[0-9a-fA-F]+)(?:\s+<(.+)>)?)");
+    QRegularExpressionMatch match = targetRx.match(link);
 
-    for (QTextBlock block = doc->begin(); block != doc->end(); block = block.next()) {
-        if (const QString &text = block.text(); text.size() > 2 && text.startsWith("\t0x")) {
-            if (const long long endPos = text.indexOf(':'); endPos > 0) {
-                QString addr = text.left(endPos);
-                addr.remove("\t");
-                addressLookup[addr] = block.blockNumber();
+    if (match.hasMatch()) {
+        jumpToTarget(match.captured(1));
+    } else {
+        jumpToTarget(link);
+    }
+}
+
+bool textviewer::eventFilter(QObject *watched, QEvent *event) {
+    if (watched == ui->treeView->viewport() && event->type() == QEvent::MouseButtonRelease) {
+        const auto *mouseEvent = static_cast<QMouseEvent *>(event);
+        if (mouseEvent->button() == Qt::LeftButton) {
+            const auto index = ui->treeView->indexAt(mouseEvent->pos());
+            if (index.isValid() && index.parent().isValid() && (index.column() == 2 || index.column() == 4) && !index.
+                data().toString().isEmpty()) {
+                handleLink(index.data().toString());
+                return true;
             }
         }
     }
-}
 
-bool textviewer::eventFilter(QObject *obj, QEvent *event) {
-    if (obj != ui->textBrowser->viewport() || event->type() != QEvent::MouseButtonRelease)
-        return QWidget::eventFilter(obj, event);
-    const auto *me = dynamic_cast<QMouseEvent *>(event);
-    QTextCursor cursor = ui->textBrowser->cursorForPosition(me->pos());
-    QTextCursor cursor2 = ui->textBrowser->cursorForPosition(me->pos());
-
-
-    // Get the clicked position within the line
-    int clickedCol = cursor.positionInBlock();
-
-    // Select the entire line
-    cursor.select(QTextCursor::LineUnderCursor);
-    cursor2.select(QTextCursor::WordUnderCursor);
-    QString line = cursor.selectedText();
-
-    QString line2 = cursor2.selectedText();
-
-    if (line2.startsWith("\u200c") && line2.endsWith("\u200c")) {
-        line2.remove("\u200c");
-        std::cout << "clicked " << line2.toStdString() << std::endl;
-        jumpToTarget(line2);
-        return true;
-    }
-
-    // Find "target 0x..." pattern and check if click was on it
-    static const QRegularExpression targetRx(R"(#target\s+(0x[0-9a-fA-F]+)(?:\s+<(.+)>)?)");
-    QRegularExpressionMatchIterator it = targetRx.globalMatch(line);
-
-    while (it.hasNext()) {
-        QRegularExpressionMatch match = it.next();
-        const long long start = match.capturedStart(0);
-        if (const long long end = match.capturedEnd(0); clickedCol >= start && clickedCol < end) {
-            const QString address = match.captured(1);
-            const QString symbol = match.captured(2); // may be empty
-            qDebug() << "Clicked:" << address << symbol;
-            jumpToTarget(address);
-            return true;
-        }
-    }
-
-    return QWidget::eventFilter(obj, event);
+    return QWidget::eventFilter(watched, event);
 }
 
 
 void textviewer::on_searchLineEdit_textChanged(const QString &text) {
-    ui->textBrowser->find(text);
-    totalMatches = countSearchResults(text);
-    currentMatch = findCurrentMatch(text);
-
-    updateSearchLabel();
+    searchTimer->stop();
+    searchTimer->start(150);
 }
 
 void textviewer::on_previousSearchPushButton_clicked() {
@@ -356,7 +330,6 @@ void textviewer::on_previousSearchPushButton_clicked() {
     updateSearchLabel();
 }
 
-
 void textviewer::on_nextSearchPushButton_clicked() {
     if (ui->searchLineEdit->text().isEmpty())
         return;
@@ -372,4 +345,8 @@ void textviewer::on_nextSearchPushButton_clicked() {
 
 
     updateSearchLabel();
+}
+
+void textviewer::on_closeSearchButton_clicked() {
+    ui->searchGroupBox->hide();
 }

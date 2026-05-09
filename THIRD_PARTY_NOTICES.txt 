@@ -1,0 +1,24 @@
+Third-Party Software Notices
+=============================
+
+This software includes the following third-party libraries:
+
+----------------------------------------------------------------
+Capstone Disassembly Engine
+License: BSD 3-Clause
+Copyright (c) 2013, COSEINC
+https://github.com/capstone-engine/capstone
+See LICENSES/BSD-3-Clause
+----------------------------------------------------------------
+Qt6 Framework (Community Edition)
+License: GNU Lesser General Public License v3.0
+Copyright (C) The Qt Company Ltd.
+https://www.qt.io
+See LICENSES/LGPL-3.0
+----------------------------------------------------------------
+rustc-demangle
+License: MIT
+Copyright (c) 2015 Alex Crichton
+https://github.com/rust-lang/rustc-demangle
+See LICENSES/MIT
+----------------------------------------------------------------

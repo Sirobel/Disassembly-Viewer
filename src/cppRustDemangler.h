@@ -13,7 +13,8 @@ public:
     std::string demangle(const std::string &name) override;
 
 private:
-    std::string cppDemangle(const std::string &name);
+    static std::string cppDemangle(const std::string &name);
+    static std::string rustDemangle(const std::string& name);
 };
 
 

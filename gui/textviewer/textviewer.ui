@@ -87,10 +87,30 @@
             </property>
            </spacer>
           </item>
+          <item>
+           <widget class="QPushButton" name="closeSearchButton">
+            <property name="text">
+             <string>x</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
       </layout>
+     </item>
+     <item>
+      <widget class="QTreeView" name="treeView">
+       <property name="autoScroll">
+        <bool>false</bool>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+       </property>
+       <property name="textElideMode">
+        <enum>Qt::TextElideMode::ElideNone</enum>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPlainTextEdit" name="textBrowser">
