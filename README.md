@@ -1,4 +1,6 @@
 # Disassembly-Viewer
+git submodule update --init --recursive
+
 
 ## License
 This project is licensed under .
