@@ -26,6 +26,8 @@ fileinfo::~fileinfo() {
 }
 
 void fileinfo::changeWidget(const int index) {
+    ui->commandLabel->setText(commands[index]);
+
     if (index == 0 || index == 1) {
         columInfo->setSectionNames(sectionNames);
         columInfo->setElfHeader(elfHeader);
