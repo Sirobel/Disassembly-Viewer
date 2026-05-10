@@ -35,10 +35,12 @@ textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer
     ui->searchGroupBox->hide();
     model = new DisasmModel(this);
     ui->treeView->setModel(model);
-    ui->treeView->setItemDelegate(new DisasmDelegate(ui->treeView));
+    delegate = new DisasmDelegate(ui->treeView);
+    ui->treeView->setItemDelegate(delegate);
     ui->treeView->setRootIsDecorated(true);
     ui->treeView->header()->hide();
     ui->treeView->viewport()->installEventFilter(this);
+    ui->treeView->setUniformRowHeights(true);
 
     ui->textBrowser->hide();
 
@@ -176,6 +178,7 @@ void textviewer::refresh() {
     font.setPointSize(settings.value("fontSize", 16).toInt());
     ui->textBrowser->setStyleSheet("color :" + settings.value("textColor", "#000000").toString() + ";");
     ui->textBrowser->setFont(font);
+    delegate->refresh();
 }
 
 void textviewer::showFileInfo(const int index) {
@@ -246,11 +249,29 @@ void textviewer::updateSearchLabel() {
 
 void textviewer::search() {
     const QString text = ui->searchLineEdit->text();
-    ui->textBrowser->find(text);
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    totalMatches = countSearchResults(text);
-    currentMatch = findCurrentMatch(text);
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+    if (text.isEmpty()) {
+        currentSearchIndex = {};
+        totalMatches = 0;
+        currentMatch = 0;
+        updateSearchLabel();
+        return;
+    }
+
+
+    totalMatches = model->countMatches(text);
+    currentSearchIndex = model->findNext(text, {});
+    currentMatch = 1;
+
+    if (currentSearchIndex.isValid()) {
+        ui->treeView->scrollTo(currentSearchIndex, QAbstractItemView::PositionAtCenter);
+        ui->treeView->selectionModel()->setCurrentIndex(currentSearchIndex,
+                                                        QItemSelectionModel::ClearAndSelect |
+                                                        QItemSelectionModel::Rows);
+    }
+
+    const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
     std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() <<
             "[ms]" << std::endl;
@@ -271,6 +292,7 @@ void textviewer::jumpToTarget(const QString &target) {
         QTimer::singleShot(100, this, []() {
             QToolTip::showText(QCursor::pos(), "Link target not in Textview");
         });
+        return;
     }
 
     ui->treeView->scrollTo(index, QAbstractItemView::PositionAtTop);
@@ -294,7 +316,7 @@ void textviewer::handleLink(const QString &link) {
 
 bool textviewer::eventFilter(QObject *watched, QEvent *event) {
     if (watched == ui->treeView->viewport() && event->type() == QEvent::MouseButtonRelease) {
-        const auto *mouseEvent = static_cast<QMouseEvent *>(event);
+        const auto *mouseEvent = dynamic_cast<QMouseEvent *>(event);
         if (mouseEvent->button() == Qt::LeftButton) {
             const auto index = ui->treeView->indexAt(mouseEvent->pos());
             if (index.isValid() && index.parent().isValid() && (index.column() == 2 || index.column() == 4) && !index.
@@ -315,35 +337,44 @@ void textviewer::on_searchLineEdit_textChanged(const QString &text) {
 }
 
 void textviewer::on_previousSearchPushButton_clicked() {
-    if (ui->searchLineEdit->text().isEmpty())
-        return;
+    const QString text = ui->searchLineEdit->text();
+    if (text.isEmpty()) return;
 
-
-    if (!ui->textBrowser->find(ui->searchLineEdit->text(), QTextDocument::FindBackward)) {
-        ui->textBrowser->moveCursor(QTextCursor::End);
-        ui->textBrowser->find(ui->searchLineEdit->text(), QTextDocument::FindBackward);
-    }
-    currentMatch--;
-    if (currentMatch < 1)
+    QModelIndex prev = model->findPrev(text, currentSearchIndex);
+    if (!prev.isValid()) {
+        prev = model->findPrev(text, {});
         currentMatch = totalMatches;
+    } else {
+        currentMatch--;
+    }
 
+    currentSearchIndex = prev;
+    if (currentSearchIndex.isValid()) {
+        ui->treeView->scrollTo(currentSearchIndex, QAbstractItemView::PositionAtCenter);
+        ui->treeView->selectionModel()->setCurrentIndex(
+            currentSearchIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    }
     updateSearchLabel();
 }
 
 void textviewer::on_nextSearchPushButton_clicked() {
-    if (ui->searchLineEdit->text().isEmpty())
-        return;
+    const QString text = ui->searchLineEdit->text();
+    if (text.isEmpty()) return;
 
-
-    if (!ui->textBrowser->find(ui->searchLineEdit->text())) {
-        ui->textBrowser->moveCursor(QTextCursor::Start);
-        ui->textBrowser->find(ui->searchLineEdit->text());
-    }
-    currentMatch++;
-    if (currentMatch > totalMatches)
+    QModelIndex next = model->findNext(text, currentSearchIndex);
+    if (!next.isValid()) {
+        next = model->findNext(text, {});
         currentMatch = 1;
+    } else {
+        currentMatch++;
+    }
 
-
+    currentSearchIndex = next;
+    if (currentSearchIndex.isValid()) {
+        ui->treeView->scrollTo(currentSearchIndex, QAbstractItemView::PositionAtCenter);
+        ui->treeView->selectionModel()->setCurrentIndex(
+            currentSearchIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    }
     updateSearchLabel();
 }
 

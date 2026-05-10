@@ -17,7 +17,14 @@
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>-1</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="commandLabel">
+     <property name="text">
+      <string>TextLabel</string>
      </property>
     </widget>
    </item>

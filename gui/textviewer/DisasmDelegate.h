@@ -7,15 +7,27 @@
 
 #include <QStyledItemDelegate>
 #include <QTreeView>
+#include <qsettings.h>
 
 class DisasmDelegate : public QStyledItemDelegate {
     Q_OBJECT
+
 public:
     explicit DisasmDelegate(QTreeView *parent = nullptr);
+
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
                const QModelIndex &index) const override;
+
+    void refresh();
+
+protected:
+    void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override;
+
 private:
-    QTreeView *view;
+    QSettings settings;
+    QColor textColor;
+    QColor linkColor;
+    bool showUnderline;
 };
 
 #endif //DISASSEMBLY_VIEWER_DISASMDELEGATE_H

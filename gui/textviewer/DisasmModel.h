@@ -22,6 +22,11 @@ public:
         QVector<Instruction> instructions;
     };
 
+    struct Disassembly {
+        QString name;
+        QVector<Section> sections;
+    };
+
     explicit DisasmModel(QObject *parent = nullptr);
 
     QModelIndex index(int row, int col, const QModelIndex &parent) const override;
@@ -32,11 +37,17 @@ public:
 
     int columnCount(const QModelIndex &parent) const override;
 
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
 
     void setSections(QVector<Section> data);
 
     QModelIndex findAddress(const QString &address) const;
+
+    QModelIndex findNext(const QString &text, const QModelIndex &from);
+
+    QModelIndex findPrev(const QString &text, const QModelIndex &from);
+
+    int countMatches(const QString &text);
 
 private:
     QVector<Section> sections;

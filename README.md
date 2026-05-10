@@ -1,5 +1,7 @@
 # Disassembly-Viewer
-git submodule update --init --recursive
+After git clone use this command to download submodules
+
+    git submodule update --init --recursive
 
 
 ## License

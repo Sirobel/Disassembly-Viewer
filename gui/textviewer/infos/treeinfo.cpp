@@ -164,6 +164,94 @@ void treeinfo::showRelocationTables() {
             names.append(QString::number(rela.r_addend));
             ////for later in the elf.h under /* AMD x86-64 relocations.  */
             names.append(QString::number(ELF64_R_TYPE(rela.r_info)));
+            names.append([&] {
+                switch (ELF64_R_TYPE(rela.r_info)) {
+                    case R_X86_64_NONE:
+                        return "no reloc";
+                    case R_X86_64_64:
+                        return "direct 64 bit";
+                    case R_X86_64_PC32:
+                        return "pc relative 32 bit signed";
+                    case R_X86_64_GOT32:
+                        return "32 bit got entry";
+                    case R_X86_64_PLT32:
+                        return "32 bit plt address";
+                    case R_X86_64_COPY:
+                        return "copy symbol at runtime";
+                    case R_X86_64_GLOB_DAT:
+                        return "create got entry";
+                    case R_X86_64_JUMP_SLOT:
+                        return "create plt entry";
+                    case R_X86_64_RELATIVE:
+                        return "adjust by program base";
+                    case R_X86_64_GOTPCREL:
+                        return "32 bit signed pc relative offset to got";
+                    case R_X86_64_32:
+                        return "direct 32 bit zero extend";
+                    case R_X86_64_32S:
+                        return "direct 32 bit signed extend";
+                    case R_X86_64_16:
+                        return "direct 16 bit zero extend";
+                    case R_X86_64_PC16:
+                        return "direct 16 bit sign extended pc relative";
+                    case R_X86_64_8:
+                        return "direct 8 bit sign extend";
+                    case R_X86_64_PC8:
+                        return "8 bit sign extend pc relative";
+                    case R_X86_64_DTPMOD64:
+                        return "ID of module containing symbol";
+                    case R_X86_64_DTPOFF64:
+                        return "offset in module's TLS block";
+                    case R_X86_64_TPOFF64:
+                        return "offset in initial TLS block";
+                    case R_X86_64_TLSGD:
+                        return "32 bit signed PC relative offset to two GOT entries for GD symbol";
+                    case R_X86_64_TLSLD:
+                        return "32 bit signed PC relative offset to two GOT entries for LD symbol";
+                    case R_X86_64_DTPOFF32:
+                        return "offset in TLS block";
+                    case R_X86_64_GOTTPOFF:
+                        return "32 bit signed PC relative offset to GOT entry for IE symbol";
+                    case R_X86_64_TPOFF32:
+                        return "offset in initial TLS block";
+                    case R_X86_64_PC64:
+                        return "pc relative 64 bit";
+                    case R_X86_64_GOTOFF64:
+                        return "64 bit offset to GOT";
+                    case R_X86_64_GOTPC32:
+                        return "2 bit signed pc relative offset to GOT";
+                    case R_X86_64_GOT64:
+                        return "64 bit GOT entry offset";
+                    case R_X86_64_GOTPCREL64:
+                        return "64 bit pc relative offset to GOT entry";
+                    case R_X86_64_GOTPC64:
+                        return "64 bit pc relative offset to GOT";
+                    case R_X86_64_GOTPLT64:
+                        return "64 bit pc relative offset to GOT, says PLT entry needed";
+                    case R_X86_64_PLTOFF64:
+                        return "64 bit GOT relative offset to PLT entry";
+                    case R_X86_64_SIZE32:
+                        return "size of symbol plus 32 bit addend";
+                    case R_X86_64_SIZE64:
+                        return "size of symbol plus 64 bit addend";
+                    case R_X86_64_GOTPC32_TLSDESC:
+                        return "GOT offset for TLS descriptor";
+                    case R_X86_64_TLSDESC_CALL:
+                        return "Marker for call through TLS descriptor";
+                    case R_X86_64_TLSDESC:
+                        return "TLS descriptor";
+                    case R_X86_64_IRELATIVE:
+                        return "Adjust indirectly by program base";
+                    case R_X86_64_RELATIVE64:
+                        return "64 bit adjust by program base";
+                    case R_X86_64_GOTPCRELX:
+                        return "Load from 32 bit signed pc relative offset to GOT entry without REX prefix, relaxable";
+                    case R_X86_64_REX_GOTPCRELX:
+                        return "Load from 32 bit signed pc relative offset to GOT entry with REX prefix, relaxable";
+                    default:
+                        return "unknown";
+                }
+            }());
             names.append(QString::number(ELF64_R_SYM(rela.r_info)));
             names.append(QString::number(rela.r_offset));
 

@@ -28,11 +28,11 @@ QModelIndex DisasmModel::parent(const QModelIndex &child) const {
 
 int DisasmModel::rowCount(const QModelIndex &parent) const {
     if (!parent.isValid()) {
-        return sections.size();
+        return static_cast<int>(sections.size());
     }
 
     if (parent.internalId() == static_cast<quintptr>(-1)) {
-        return sections[parent.row()].instructions.size();
+        return static_cast<int>(sections[parent.row()].instructions.size());
     }
     return 0;
 }
@@ -53,7 +53,8 @@ QVariant DisasmModel::data(const QModelIndex &index, int role) const {
         return {};
     }
 
-    const auto &[address, bytes, mnemonic, operands, comment] = sections[index.internalId()].instructions[index.row()];
+    const auto &[address, bytes, mnemonic, operands, comment] = sections[static_cast<int>(index.internalId())].
+            instructions[index.row()];
     if (role == Qt::DisplayRole) {
         switch (index.column()) {
             case 0:
@@ -91,4 +92,97 @@ void DisasmModel::setSections(QVector<Section> data) {
 
 QModelIndex DisasmModel::findAddress(const QString &address) const {
     return indexes.value(address, {});
+}
+
+static bool instructionMatches(const DisasmModel::Instruction &insn, const QString &text) {
+    return insn.address.contains(text, Qt::CaseInsensitive) ||
+           insn.bytes.contains(text, Qt::CaseInsensitive) ||
+           insn.mnemonic.contains(text, Qt::CaseInsensitive) ||
+           insn.operands.contains(text, Qt::CaseInsensitive) ||
+           insn.comment.contains(text, Qt::CaseInsensitive);
+}
+
+QModelIndex DisasmModel::findNext(const QString &text, const QModelIndex &from) {
+    if (text.isEmpty()) return {};
+
+    int startSection = 0;
+    int startRow = -2;
+
+    if (from.isValid()) {
+        if (from.internalId() == static_cast<quintptr>(-1)) {
+
+            startSection = from.row();
+            startRow = -1;
+        } else {
+            startSection = static_cast<int>(from.internalId());
+            startRow = from.row();
+        }
+    }
+
+    for (int si = startSection; si < sections.size(); ++si) {
+        if (si == startSection ? startRow == -2 : true) {
+            if (sections[si].name.contains(text, Qt::CaseInsensitive))
+                return createIndex(si, 0, static_cast<quintptr>(-1));
+        }
+
+        const auto &insns = sections[si].instructions;
+        int rowStart = (si == startSection) ? startRow + 1 : 0;
+        for (int ri = rowStart; ri < insns.size(); ++ri) {
+            if (instructionMatches(insns[ri], text))
+                return createIndex(ri, 0, static_cast<quintptr>(si));
+        }
+    }
+    return {};
+}
+
+QModelIndex DisasmModel::findPrev(const QString &text, const QModelIndex &from) {
+    if (text.isEmpty()) return {};
+
+    int startSection = static_cast<int>(sections.size()) - 1;
+    int startRow = sections.isEmpty() ? -1 : static_cast<int>(sections.back().instructions.size());
+
+    if (from.isValid()) {
+        if (from.internalId() == static_cast<quintptr>(-1)) {
+            startSection = from.row() - 1;
+            startRow = startSection >= 0 ? static_cast<int>(sections[startSection].instructions.size()) : -1;
+        } else {
+            startSection = static_cast<int>(from.internalId());
+            startRow = from.row();
+        }
+    }
+
+    for (int si = startSection; si >= 0; --si) {
+        const auto &insns = sections[si].instructions;
+        const int rowStart = (si == startSection) ? startRow - 1 : insns.size() - 1;
+        for (int ri = rowStart; ri >= 0; --ri) {
+            if (instructionMatches(insns[ri], text))
+                return createIndex(ri, 0, static_cast<quintptr>(si));
+        }
+
+        if (sections[si].name.contains(text, Qt::CaseInsensitive))
+            return createIndex(si, 0, static_cast<quintptr>(-1));
+    }
+    return {};
+}
+
+int DisasmModel::countMatches(const QString &text) {
+    if (text.isEmpty()) {
+        return 0;
+    }
+
+    int count = 0;
+    for (const auto &[name, instructions]: sections) {
+        if (name.contains(text, Qt::CaseInsensitive))
+            count++;
+        for (const auto &[address, bytes, mnemonic, operands, comment]: instructions) {
+            if (address.contains(text, Qt::CaseInsensitive) ||
+                mnemonic.contains(text, Qt::CaseInsensitive) ||
+                operands.contains(text, Qt::CaseInsensitive) ||
+                comment.contains(text, Qt::CaseInsensitive) ||
+                bytes.contains(text, Qt::CaseInsensitive))
+                count++;
+        }
+    }
+
+    return count;
 }

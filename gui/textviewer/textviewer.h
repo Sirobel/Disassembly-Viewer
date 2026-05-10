@@ -10,6 +10,7 @@
 #include <QSettings>
 #include <QShortcut>
 
+#include "DisasmDelegate.h"
 #include "DisasmModel.h"
 #include "infos/fileinfo.h"
 
@@ -56,6 +57,8 @@ private:
     int currentMatch = 0;
     QTimer *searchTimer;
     DisasmModel *model;
+    QModelIndex currentSearchIndex;
+    DisasmDelegate *delegate;
 
     fileinfo *fileInfo;
 
