@@ -60,7 +60,6 @@ private:
 
     void decodeId(quintptr id, int &sec, int &func, int &insn) const;
 
-    bool textIsMatch(const QString &text, const Instruction &instruction) const;
 };
 
 

@@ -4,7 +4,6 @@
 
 #include "../tree/DisasmModel.h"
 
-#include <iostream>
 #include <QColor>
 
 DisasmModel::DisasmModel(QObject *parent) : settings("Sirobel", "Disassembly-Viewer") {
@@ -30,14 +29,6 @@ void DisasmModel::decodeId(quintptr id, int &sec, int &func, int &insn) const {
     sec = static_cast<int>((id >> 48) & 0xFFFF) - 1;
     func = static_cast<int>((id >> 32) & 0xFFFF) - 1;
     insn = static_cast<int>(id & 0xFFFFFFFF) - 1;
-}
-
-bool DisasmModel::textIsMatch(const QString &text, const Instruction &instruction) const {
-    return instruction.address.contains(text, Qt::CaseInsensitive) ||
-           instruction.bytes.contains(text, Qt::CaseInsensitive) ||
-           instruction.mnemonic.contains(text, Qt::CaseInsensitive) ||
-           instruction.operands.contains(text, Qt::CaseInsensitive) ||
-           instruction.comment.contains(text, Qt::CaseInsensitive);
 }
 
 QModelIndex DisasmModel::index(int row, int col, const QModelIndex &parent) const {
@@ -118,7 +109,6 @@ QVariant DisasmModel::data(const QModelIndex &index, int role) const {
         default:
             return {};
     }
-    return {};
 }
 
 void DisasmModel::setSections(QVector<Section> data) {
@@ -166,7 +156,7 @@ int DisasmModel::countMatches(const QString &text) {
             if (funcName.contains(text, Qt::CaseInsensitive))
                 count++;
             for (auto &insn: instructions) {
-                if (textIsMatch(text, insn))
+                if (instructionMatches(insn,text))
                     count++;
             }
         }
