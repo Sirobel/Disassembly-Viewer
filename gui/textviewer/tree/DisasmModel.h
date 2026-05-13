@@ -17,14 +17,14 @@ public:
         QString address, bytes, mnemonic, operands, comment;
     };
 
-    struct Section {
+    struct Function {
         QString name;
         QVector<Instruction> instructions;
     };
 
-    struct Disassembly {
+    struct Section {
         QString name;
-        QVector<Section> sections;
+        QVector<Function> functions;
     };
 
     explicit DisasmModel(QObject *parent = nullptr);
@@ -55,6 +55,12 @@ private:
     QColor linkColor;
     QColor textColor;
     QHash<QString, QModelIndex> indexes;
+
+    quintptr encodeId(int sec, int func, int insn) const;
+
+    void decodeId(quintptr id, int &sec, int &func, int &insn) const;
+
+    bool textIsMatch(const QString &text, const Instruction &instruction) const;
 };
 
 

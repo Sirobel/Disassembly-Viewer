@@ -25,8 +25,8 @@
 #include <qregularexpression.h>
 #include <QScrollBar>
 
-#include "DisasmDelegate.h"
-#include "textviewer/DisasmModel.h"
+#include "tree/DisasmDelegate.h"
+#include "textviewer/tree/DisasmModel.h"
 
 
 textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer),
@@ -38,8 +38,11 @@ textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer
     delegate = new DisasmDelegate(ui->treeView);
     ui->treeView->setItemDelegate(delegate);
     ui->treeView->setRootIsDecorated(true);
-    ui->treeView->header()->hide();
     ui->treeView->viewport()->installEventFilter(this);
+    ui->treeView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->treeView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    ui->treeView->setToolTip("");
+    ui->treeView->setMouseTracking(true);
     ui->treeView->setUniformRowHeights(true);
 
     ui->textBrowser->hide();
@@ -89,7 +92,6 @@ void textviewer::openFile(const QString &filePath) {
         QString text;
 
         std::vector<std::string> sections = {".init", ".plt", ".plt.got", ".plt.sec", ".text", ".fini"};
-        sections = {".text"};
         std::vector<std::future<std::string> > futures;
         std::counting_semaphore<4> sem(4);
         QVector<DisasmModel::Section> section;
@@ -100,7 +102,8 @@ void textviewer::openFile(const QString &filePath) {
             auto s = disasm.disassemblePart(data, elf->getAddressOfSegment(sec));
             text += "Disassembly of Section " + QString::fromStdString(sec) + "\n";
             text += QString::fromStdString(s) + "\n";
-            section.append(disasm.disassemblePartToSections(data, elf->getAddressOfSegment(sec)));
+            section.emplace_back("Disassembly of Section " + QString::fromStdString(sec),
+                                 disasm.disassemblePartToSections(data, elf->getAddressOfSegment(sec)));
         }
 
 
@@ -113,6 +116,17 @@ void textviewer::openFile(const QString &filePath) {
         ui->textBrowser->setPlainText(text);
         model->setSections(section);
         ui->treeView->expandAll();
+
+
+        for (int s = 0; s < model->rowCount({}); ++s) {
+            ui->treeView->setFirstColumnSpanned(s, QModelIndex(), true);
+            QModelIndex secIdx = model->index(s, 0, {});
+            for (int f = 0; f < model->rowCount(secIdx); ++f) {
+                ui->treeView->setFirstColumnSpanned(f, secIdx, true);
+            }
+        }
+
+        ui->treeView->resizeColumnToContents(0);
         ui->treeView->resizeColumnToContents(1);
         ui->treeView->resizeColumnToContents(2);
         ui->treeView->resizeColumnToContents(3);
@@ -178,6 +192,7 @@ void textviewer::refresh() {
     font.setPointSize(settings.value("fontSize", 16).toInt());
     ui->textBrowser->setStyleSheet("color :" + settings.value("textColor", "#000000").toString() + ";");
     ui->textBrowser->setFont(font);
+    ui->treeView->setFont(font);
     delegate->refresh();
 }
 

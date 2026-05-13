@@ -24,10 +24,13 @@ protected:
     void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override;
 
 private:
+    QTreeView *view;
     QSettings settings;
     QColor textColor;
     QColor linkColor;
     bool showUnderline;
+
+    static int getDepth(const QModelIndex &index);
 };
 
 #endif //DISASSEMBLY_VIEWER_DISASMDELEGATE_H

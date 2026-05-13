@@ -17,7 +17,7 @@ public:
 
     ~x86_64Disasm() override;
 
-    QVector<DisasmModel::Section> disassemblePartToSections(const std::vector<uint8_t> &machineCode,
+    QVector<DisasmModel::Function> disassemblePartToSections(const std::vector<uint8_t> &machineCode,
                                                         uint64_t startingAddress) override;
 
 private:

@@ -77,10 +77,10 @@ add_executable(Disassembly-Viewer src/main.cpp
         src/Demangler.h
         src/cppRustDemangler.cpp
         src/cppRustDemangler.h
-        gui/textviewer/DisasmModel.cpp
-        gui/textviewer/DisasmModel.h
-        gui/textviewer/DisasmDelegate.cpp
-        gui/textviewer/DisasmDelegate.h
+        gui/textviewer/tree/DisasmModel.cpp
+        gui/textviewer/tree/DisasmModel.h
+        gui/textviewer/tree/DisasmDelegate.cpp
+        gui/textviewer/tree/DisasmDelegate.h
 )
 target_include_directories(Disassembly-Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/gui

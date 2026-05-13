@@ -78,6 +78,11 @@ void windowhandler::setupTextViewerMenubar() {
         textViewer->showFileInfo(1);
     });
 
+    const auto programHeaderAction = infoMenu->addAction("Program Header");
+    connect(programHeaderAction, &QAction::triggered, [this]() {
+        textViewer->showFileInfo(5);
+    });
+
     const auto stringTableAction = infoMenu->addAction("StringTables");
     connect(stringTableAction, &QAction::triggered, [this]() {
         textViewer->showFileInfo(2);

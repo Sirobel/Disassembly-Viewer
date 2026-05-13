@@ -7,7 +7,7 @@
 
 #pragma once
 #include <ElfHandler.h>
-#include <textviewer/DisasmModel.h>
+#include <../gui/textviewer/tree/DisasmModel.h>
 
 class Disassembler {
 public:
@@ -20,7 +20,7 @@ public:
         return "";
     }
 
-    virtual QVector<DisasmModel::Section> disassemblePartToSections(const std::vector<uint8_t> &machineCode,
+    virtual QVector<DisasmModel::Function> disassemblePartToSections(const std::vector<uint8_t> &machineCode,
                                                                     uint64_t startingAddress) {
         return {};
     }

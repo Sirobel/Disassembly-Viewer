@@ -73,10 +73,10 @@ std::string x86_64Disasm::disassemblePart(const std::vector<uint8_t> &machineCod
 
 x86_64Disasm::~x86_64Disasm() = default;
 
-QVector<DisasmModel::Section> x86_64Disasm::disassemblePartToSections(
+QVector<DisasmModel::Function> x86_64Disasm::disassemblePartToSections(
     const std::vector<uint8_t> &machineCode, uint64_t startingAddress) {
-    QVector<DisasmModel::Section> sections;
-    DisasmModel::Section current;
+    QVector<DisasmModel::Function> sections;
+    DisasmModel::Function current;
 
     csh handle;
     cs_insn *insn;
@@ -91,7 +91,7 @@ QVector<DisasmModel::Section> x86_64Disasm::disassemblePartToSections(
         if (auto sym = elf.lookupSymbol(insn[i].address); !sym.empty()) {
             if (!current.instructions.isEmpty())
                 sections.append(current);
-            current = {QString::fromStdString(sym), {}};
+            current = {QString::fromStdString("section <"+sym+">"), {}};
         }
 
         std::ostringstream bytes;
@@ -106,7 +106,7 @@ QVector<DisasmModel::Section> x86_64Disasm::disassemblePartToSections(
         for (int j = 0; j < detail->x86.op_count; j++) {
             const auto &op = detail->x86.operands[j];
             if (op.type == X86_OP_MEM && op.mem.base == X86_REG_RIP) {
-                uint64_t target = insn[i].address + insn[i].size + op.mem.disp;
+                const uint64_t target = insn[i].address + insn[i].size + op.mem.disp;
                 comment = QString("#target 0x%1 <%2>")
                         .arg(target, 0, 16)
                         .arg(QString::fromStdString(elf.lookupRangeSymbol(target)));

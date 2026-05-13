@@ -10,8 +10,8 @@
 #include <QSettings>
 #include <QShortcut>
 
-#include "DisasmDelegate.h"
-#include "DisasmModel.h"
+#include "tree/DisasmDelegate.h"
+#include "tree/DisasmModel.h"
 #include "infos/fileinfo.h"
 
 
