@@ -46,6 +46,10 @@ private slots:
 
     void on_memBarBorderColorLineEdit_textChanged(const QString &text);
 
+    void on_sectionAddPushButton_clicked();
+
+    void on_sectionDeletePushButton_clicked();
+
 private:
     Ui::textviewersettings *ui;
     QSettings settings;

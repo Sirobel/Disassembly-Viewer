@@ -196,6 +196,8 @@ void membar::drawAll() {
 
         for (const auto &segment: sectionHeaders[i]) {
             painter.setPen(QPen(borderColor, borderSize));
+            if (borderSize <= 0)
+                painter.setPen(Qt::NoPen);
             auto secRec = QRectF(x + static_cast<double>(segment.addr - programHeaders[i].addr) * sectionScale, 0,
                                  static_cast<double>(segment.size) * sectionScale, height());
             painter.setBrush(colors[i]);
@@ -220,6 +222,8 @@ void membar::drawSectionHeaders() {
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setBrush(colors[drawTarget]);
     painter.setPen(QPen(borderColor, borderSize));
+    if (borderSize <= 0)
+        painter.setPen(Qt::NoPen);
     painter.setFont(QFont("Arial", fontSize, QFont::Bold));
 
     const double scale = width() / static_cast<double>(programHeaders[drawTarget].size);

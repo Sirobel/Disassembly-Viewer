@@ -35,6 +35,7 @@ windowhandler::windowhandler(QWidget *parent) : QMainWindow(parent), ui(new Ui::
         recentFiles->refresh();
         textViewer->refresh();
     });
+    settings->saveSettings();
     settings->close();
 
     connect(recentFiles->getListWidget(), &QListWidget::itemClicked, this, [this](const QListWidgetItem *item) {
@@ -60,6 +61,11 @@ void windowhandler::setupTextViewerMenubar() {
         settings->show();
         settings->raise();
         settings->activateWindow();
+    });
+
+    const auto searchAction = fileMenu->addAction("Search");
+    connect(searchAction, &QAction::triggered, [this] {
+        textViewer->toggleSearchbar();
     });
 
     const auto closeAction = fileMenu->addAction("Close");

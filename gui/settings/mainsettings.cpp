@@ -31,6 +31,12 @@ mainsettings::mainsettings(QWidget *parent) : QWidget(parent), ui(new Ui::mainse
     ui->stackedWidget->setCurrentIndex(0);
 }
 
+void mainsettings::saveSettings() {
+    recentFilesSettings->saveSettings();
+    textViewerSettings->saveSettings();
+    emit SavedSettings();
+}
+
 mainsettings::~mainsettings() {
     delete ui;
 }
@@ -59,7 +65,5 @@ void mainsettings::on_OkPushButton_clicked() {
 
 
 void mainsettings::on_ApplyPushButton_clicked() {
-    recentFilesSettings->saveSettings();
-    textViewerSettings->saveSettings();
-    emit SavedSettings();
+    saveSettings();
 }

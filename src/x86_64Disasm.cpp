@@ -74,7 +74,7 @@ std::string x86_64Disasm::disassemblePart(const std::vector<uint8_t> &machineCod
 x86_64Disasm::~x86_64Disasm() = default;
 
 QVector<DisasmModel::Function> x86_64Disasm::disassemblePartToSections(
-    const std::vector<uint8_t> &machineCode, uint64_t startingAddress) {
+    const std::vector<uint8_t> &machineCode, uint64_t startingAddress) const {
     QVector<DisasmModel::Function> sections;
     DisasmModel::Function current;
 

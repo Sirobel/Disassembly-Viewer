@@ -113,24 +113,15 @@
        <property name="uniformRowHeights">
         <bool>true</bool>
        </property>
+       <property name="allColumnsShowFocus">
+        <bool>true</bool>
+       </property>
        <property name="headerHidden">
         <bool>true</bool>
        </property>
        <attribute name="headerStretchLastSection">
         <bool>false</bool>
        </attribute>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPlainTextEdit" name="textBrowser">
-       <property name="font">
-        <font>
-         <family>Ubuntu Mono</family>
-        </font>
-       </property>
-       <property name="lineWrapMode">
-        <enum>QPlainTextEdit::LineWrapMode::NoWrap</enum>
-       </property>
       </widget>
      </item>
     </layout>

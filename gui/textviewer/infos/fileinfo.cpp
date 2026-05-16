@@ -26,7 +26,7 @@ fileinfo::~fileinfo() {
 }
 
 void fileinfo::changeWidget(const int index) {
-    ui->commandLabel->setText(commands[index]);
+    ui->commandLabel->setText(commands.value(index, "unknown"));
 
     if (index == 0 || index == 1) {
         columInfo->setSectionNames(sectionNames);

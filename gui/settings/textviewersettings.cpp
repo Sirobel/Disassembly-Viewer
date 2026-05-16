@@ -17,18 +17,21 @@ textviewersettings::textviewersettings(QWidget *parent) : QWidget(parent), ui(ne
 }
 
 void textviewersettings::loadSettings() {
-    ui->linkColorLineEdit->setText(settings.value("linkColor").toString());
-    ui->textColorLineEdit->setText(settings.value("textColor").toString());
+    ui->linkColorLineEdit->setText(settings.value("linkColor","#0000FF").toString());
+    ui->textColorLineEdit->setText(settings.value("textColor","#000000").toString());
     ui->linkUnsercoreCheckBox->setCheckState(
         static_cast<Qt::CheckState>(settings.value("linkUnderscore", Qt::Checked).toInt())
     );
-    ui->fontSizeSpinBox->setValue(settings.value("fontSize").toInt());
+    ui->fontSizeSpinBox->setValue(settings.value("fontSize",12).toInt());
+    ui->sectionListWidget->addItems(
+        settings.value("sections", QStringList{".init", ".plt", ".plt.got", ".plt.sec", ".text", ".fini"}).
+        toStringList());
 
     addColorsToMemBarList(settings.value("memBarColors").toStringList());
-    ui->memBarTextColorLineEdit->setText(settings.value("memBarTextColor").toString());
-    ui->memBarBorderColorLineEdit->setText(settings.value("memBarBorderColor").toString());
-    ui->memBarFontSizeSpinBox->setValue(settings.value("memBarFontSize").toInt());
-    ui->memBarBorderSizeSpinBox->setValue(settings.value("memBarBorderSize").toInt());
+    ui->memBarTextColorLineEdit->setText(settings.value("memBarTextColor","#ffffff").toString());
+    ui->memBarBorderColorLineEdit->setText(settings.value("memBarBorderColor","#000000").toString());
+    ui->memBarFontSizeSpinBox->setValue(settings.value("memBarFontSize",10).toInt());
+    ui->memBarBorderSizeSpinBox->setValue(settings.value("memBarBorderSize",1).toInt());
 }
 
 void textviewersettings::saveSettings() {
@@ -36,6 +39,13 @@ void textviewersettings::saveSettings() {
     settings.setValue("textColor", ui->textColorLineEdit->text());
     settings.setValue("linkUnderscore", ui->linkUnsercoreCheckBox->checkState());
     settings.setValue("fontSize", ui->fontSizeSpinBox->value());
+
+    QStringList sections;
+    sections.reserve(ui->sectionListWidget->count());
+    for (int i = 0; i < ui->sectionListWidget->count(); ++i) {
+        sections << ui->sectionListWidget->item(i)->text();
+    }
+    settings.setValue("sections", sections);
 
     QStringList list;
     list.reserve(ui->colorListWidget->count());
@@ -162,4 +172,20 @@ void textviewersettings::addColorsToMemBarList(const QStringList &items) {
         item.setIcon(QIcon(pixmap));
         ui->colorListWidget->addItem(new QListWidgetItem(item));
     }
+}
+
+void textviewersettings::on_sectionAddPushButton_clicked() {
+    if (ui->sectionLineEdit->text().isEmpty())
+        return;
+
+    ui->sectionListWidget->addItem(new QListWidgetItem(ui->sectionLineEdit->text()));
+}
+
+
+void textviewersettings::on_sectionDeletePushButton_clicked() {
+    for (auto selected = ui->sectionListWidget->selectedItems(); const auto &item: selected) {
+        delete ui->sectionListWidget->takeItem(ui->sectionListWidget->row(item));
+    }
+    if (ui->sectionListWidget->selectedItems().isEmpty())
+        ui->deletePushButton->setDisabled(true);
 }

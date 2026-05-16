@@ -149,6 +149,7 @@ void columinfo::showHeaderInfo() {
 
     ui->tableWidget->setHorizontalHeaderLabels(fileHeaderColumn);
 
+
     auto values = createElfHeaderValueList();
 
     for (int i = 0; i < ui->tableWidget->rowCount(); i++) {

@@ -62,11 +62,8 @@ private:
 
     fileinfo *fileInfo;
 
-    void toggleSearchbar();
 
     int countSearchResults(const QString &text);
-
-    int findCurrentMatch(const QString &text);
 
     void updateSearchLabel();
 
@@ -78,6 +75,8 @@ private:
 
 public:
     bool eventFilter(QObject *watched, QEvent *event) override;
+
+    void toggleSearchbar();
 };
 
 

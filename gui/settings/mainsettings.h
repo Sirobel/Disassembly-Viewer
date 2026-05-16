@@ -27,6 +27,7 @@ signals:
 
 public:
     explicit mainsettings(QWidget *parent = nullptr);
+    void saveSettings();
 
     ~mainsettings() override;
 

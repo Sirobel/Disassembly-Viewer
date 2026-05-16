@@ -21,7 +21,7 @@ void recentfilessettings::saveSettings() {
 }
 
 void recentfilessettings::loadSettings() {
-    ui->spinBox->setValue(settings.value("amountOfRecentFiles", 0).toInt());
+    ui->spinBox->setValue(settings.value("amountOfRecentFiles", 10).toInt());
 }
 
 int recentfilessettings::getRecentFilesAmount() {

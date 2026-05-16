@@ -23,7 +23,6 @@
 #include <QInputDialog>
 #include <QMouseEvent>
 #include <qregularexpression.h>
-#include <QScrollBar>
 
 #include "tree/DisasmDelegate.h"
 #include "textviewer/tree/DisasmModel.h"
@@ -45,7 +44,6 @@ textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer
     ui->treeView->setMouseTracking(true);
     ui->treeView->setUniformRowHeights(true);
 
-    ui->textBrowser->hide();
 
     shortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
     connect(shortcut, &QShortcut::activated, this, &textviewer::toggleSearchbar);
@@ -58,24 +56,19 @@ textviewer::textviewer(QWidget *parent) : QWidget(parent), ui(new Ui::textviewer
     searchTimer->setSingleShot(true);
     connect(searchTimer, &QTimer::timeout, this, &textviewer::search);
 
-    ui->textBrowser->setMouseTracking(true);
-    ui->textBrowser->viewport()->setMouseTracking(true);
-    ui->textBrowser->viewport()->installEventFilter(this);
-    ui->textBrowser->setLineWrapMode(QPlainTextEdit::NoWrap);
-    ui->textBrowser->setUndoRedoEnabled(false);
-
-
     refresh();
 }
 
 void textviewer::openFile(const QString &filePath) {
     ui->searchGroupBox->hide();
+    ui->treeView->reset();
+    auto sections = settings.value("sections").toStringList();
+
 
     using clock = std::chrono::high_resolution_clock;
     if (filePath.isEmpty()) {
         return;
     }
-    ui->textBrowser->clear();
 
     std::cout << "Open File: " << filePath.toStdString() << std::endl;
     try {
@@ -86,24 +79,15 @@ void textviewer::openFile(const QString &filePath) {
         std::cout << "start disassembly" << std::endl;
 
         elf = std::make_unique<x86_64elf>(filePath.toStdString());
-        x86_64Disasm disasm(*elf);
-        Disassembler &disassembler = disasm;
 
-        QString text;
 
-        std::vector<std::string> sections = {".init", ".plt", ".plt.got", ".plt.sec", ".text", ".fini"};
-        std::vector<std::future<std::string> > futures;
-        std::counting_semaphore<4> sem(4);
         QVector<DisasmModel::Section> section;
+        x86_64Disasm disasm(*elf);
 
-
-        for (const std::string &sec: sections) {
-            const auto data = elf->getSection(sec);
-            auto s = disasm.disassemblePart(data, elf->getAddressOfSegment(sec));
-            text += "Disassembly of Section " + QString::fromStdString(sec) + "\n";
-            text += QString::fromStdString(s) + "\n";
-            section.emplace_back("Disassembly of Section " + QString::fromStdString(sec),
-                                 disasm.disassemblePartToSections(data, elf->getAddressOfSegment(sec)));
+        for (const auto &sec: sections) {
+            const auto data = elf->getSection(sec.toStdString());
+            section.emplace_back("Disassembly of Section " + sec,
+                                 disasm.disassemblePartToSections(data, elf->getAddressOfSegment(sec.toStdString())));
         }
 
 
@@ -113,24 +97,21 @@ void textviewer::openFile(const QString &filePath) {
         sectionTime = std::chrono::high_resolution_clock::now();
 
         //ui->textBrowser->hide();
-        ui->textBrowser->setPlainText(text);
-        model->setSections(section);
-        ui->treeView->expandAll();
+        if (!sections.empty()) {
+            model->setSections(section);
+            ui->treeView->expandAll();
 
 
-        for (int s = 0; s < model->rowCount({}); ++s) {
-            ui->treeView->setFirstColumnSpanned(s, QModelIndex(), true);
-            QModelIndex secIdx = model->index(s, 0, {});
-            for (int f = 0; f < model->rowCount(secIdx); ++f) {
-                ui->treeView->setFirstColumnSpanned(f, secIdx, true);
+            for (int s = 0; s < model->rowCount({}); ++s) {
+                ui->treeView->setFirstColumnSpanned(s, QModelIndex(), true);
+                QModelIndex secIdx = model->index(s, 0, {});
+                for (int f = 0; f < model->rowCount(secIdx); ++f) {
+                    ui->treeView->setFirstColumnSpanned(f, secIdx, true);
+                }
             }
-        }
+        } else
+            ui->treeView->reset();
 
-        ui->treeView->resizeColumnToContents(0);
-        ui->treeView->resizeColumnToContents(1);
-        ui->treeView->resizeColumnToContents(2);
-        ui->treeView->resizeColumnToContents(3);
-        ui->treeView->resizeColumnToContents(4);
 
         duration = clock::now() - sectionTime;
         std::cout << "finished setHTML in " << duration.count() << std::endl
@@ -188,10 +169,8 @@ void textviewer::refresh() {
     // .arg(settings.value("linkUnderscore", Qt::Unchecked).toInt() == Qt::Checked ? "underline" : "none");
     ui->memBar->refresh();
 
-    QFont font = ui->textBrowser->font();
+    QFont font = ui->treeView->font();
     font.setPointSize(settings.value("fontSize", 16).toInt());
-    ui->textBrowser->setStyleSheet("color :" + settings.value("textColor", "#000000").toString() + ";");
-    ui->textBrowser->setFont(font);
     ui->treeView->setFont(font);
     delegate->refresh();
 }
@@ -221,7 +200,8 @@ int textviewer::countSearchResults(const QString &text) {
     if (text.isEmpty())
         return 0;
 
-    QString content = ui->textBrowser->toPlainText();
+    //TODO
+    QString content = 0;
     int count = 0;
     int pos = 0;
 
@@ -232,26 +212,6 @@ int textviewer::countSearchResults(const QString &text) {
     return count;
 }
 
-int textviewer::findCurrentMatch(const QString &text) {
-    if (text.isEmpty())
-        return 0;
-
-    int count = 0;
-
-    QTextDocument *doc = ui->textBrowser->document();
-    QTextCursor cursor(doc);
-
-    while (!cursor.isNull() && !cursor.atEnd()) {
-        cursor = doc->find(text, cursor);
-        if (cursor.isNull())
-            return 0;
-        count++;
-
-        if (cursor.selectionStart() == ui->textBrowser->textCursor().selectionStart())
-            break;
-    }
-    return count;
-}
 
 void textviewer::updateSearchLabel() {
     if (totalMatches == 0)

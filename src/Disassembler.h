@@ -21,7 +21,7 @@ public:
     }
 
     virtual QVector<DisasmModel::Function> disassemblePartToSections(const std::vector<uint8_t> &machineCode,
-                                                                    uint64_t startingAddress) {
+                                                                    uint64_t startingAddress) const {
         return {};
     }
 
