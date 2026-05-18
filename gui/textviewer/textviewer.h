@@ -62,9 +62,6 @@ private:
 
     fileinfo *fileInfo;
 
-
-    int countSearchResults(const QString &text);
-
     void updateSearchLabel();
 
     void search();

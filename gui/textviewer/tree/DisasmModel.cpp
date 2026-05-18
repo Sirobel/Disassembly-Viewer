@@ -6,7 +6,7 @@
 
 #include <QColor>
 
-DisasmModel::DisasmModel(QObject *parent) : settings("Sirobel", "Disassembly-Viewer") {
+DisasmModel::DisasmModel(QObject *parent) : QAbstractItemModel(parent), settings("Sirobel", "Disassembly-Viewer") {
     linkColor = QColor(settings.value("linkColor", "#0000EE").toString());
     textColor = QColor(settings.value("textColor", "#ffffff").toString());
 }
@@ -156,7 +156,7 @@ int DisasmModel::countMatches(const QString &text) {
             if (funcName.contains(text, Qt::CaseInsensitive))
                 count++;
             for (auto &insn: instructions) {
-                if (instructionMatches(insn,text))
+                if (instructionMatches(insn, text))
                     count++;
             }
         }

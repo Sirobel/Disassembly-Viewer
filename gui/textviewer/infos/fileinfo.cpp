@@ -29,25 +29,29 @@ void fileinfo::changeWidget(const int index) {
     ui->commandLabel->setText(commands.value(index, "unknown"));
 
     if (index == 0 || index == 1) {
-        columInfo->setSectionNames(sectionNames);
+        columInfo->setSection(sections);
         columInfo->setElfHeader(elfHeader);
+
         columInfo->setDisplayInfo(index);
         ui->stackedWidget->setCurrentWidget(columInfo);
     }
-    if (index == 2 || index == 3 || index == 4) {
+    if (index == 2 || index == 3 || index == 4 || index == 5) {
         treeInfo->setStringTable(stringTables);
         treeInfo->setSymbolTable(symbol64Tables);
         treeInfo->setRelocationTable(relocation64Tables);
+        treeInfo->setProgramHeader(programHeaders);
+        treeInfo->setSections(sections);
+
         treeInfo->setDisplayInfo(index);
         ui->stackedWidget->setCurrentWidget(treeInfo);
     }
 }
 
-void fileinfo::setSectionNames(const std::vector<std::string> &names) {
-    sectionNames.clear();
+void fileinfo::setSectionNames(const std::vector<std::pair<std::string, Elf64_Shdr> > &data) {
+    sections.clear();
 
-    for (const auto &name: names) {
-        sectionNames.append(QString::fromStdString(name));
+    for (const auto &[name,header]: data) {
+        sections.emplace_back(QString::fromStdString(name), header);
     }
 }
 
@@ -97,4 +101,9 @@ void fileinfo::setRelocations(
         relocation64Tables[QString::fromStdString(section)].second.append(relaList);
         relocation64Tables[QString::fromStdString(section)].first = QString::fromStdString(data.first);
     }
+}
+
+void fileinfo::setProgramHeaders(const std::vector<Elf64_Phdr> &data) {
+    programHeaders.clear();
+    programHeaders = QVector<Elf64_Phdr>(data.begin(), data.end());
 }

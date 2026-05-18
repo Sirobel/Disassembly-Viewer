@@ -51,9 +51,13 @@ public:
         return {};
     }
 
-    virtual std::vector<std::string> getSectionNames() {
+    virtual std::vector<std::pair<std::string, Elf64_Shdr> > getSections64() {
         return {};
-    };
+    }
+
+    virtual std::vector<Elf64_Phdr> getProgramHeaders64() {
+        return {};
+    }
 
     virtual std::vector<std::pair<std::string, std::vector<char> > > getStringTables() {
         return {};

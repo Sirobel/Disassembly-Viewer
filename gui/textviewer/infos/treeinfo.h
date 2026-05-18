@@ -32,6 +32,10 @@ public:
 
     void setRelocationTable(const QHash<QString, QPair<QString, QList<QPair<QString, Elf64_Rela> > > > &tables);
 
+    void setProgramHeader(const QVector<Elf64_Phdr> &data);
+
+    void setSections(const QVector<QPair<QString, Elf64_Shdr> > &data);
+
 private:
     Ui::treeinfo *ui;
     QHash<QString, QVector<QString> > stringTables;
@@ -40,14 +44,22 @@ private:
     QHash<QString, QList<QPair<QString, Elf64_Sym> > > symbolTables;
     QVector<QString> symbolTableColumn = {"Sections", "Type", "Binding", "Visibility"};
 
-   QHash<QString, QPair<QString, QList<QPair<QString, Elf64_Rela> > > > relocationTables;
-    QVector<QString> relocationTableColumn = {"Section", "Address","Addend", "Type", "Symbol index"};
+    QHash<QString, QPair<QString, QList<QPair<QString, Elf64_Rela> > > > relocationTables;
+    QVector<QString> relocationTableColumn = {"Section", "Address", "Addend", "Type", "Symbol index"};
+
+    QVector<QString> programHeaderColumn = {
+        "Name/Type", "Flags", "Offset", "Virtual address", "Physical address", "File size", "Memory size", "Alignment"
+    };
+    QVector<QPair<QString, Elf64_Shdr> > sections;
+    QVector<Elf64_Phdr> programHeaders;
 
     void showStringTables();
 
     void showSymbolTables();
 
     void showRelocationTables();
+
+    void showProgramTable();
 };
 
 

@@ -54,7 +54,7 @@ public:
 
     std::vector<std::pair<uint64_t, std::string> > getSectionHeadersNames() override;
 
-    std::vector<std::string> getSectionNames() override;
+    std::vector<std::pair<std::string, Elf64_Shdr> > getSections64() override;
 
     std::vector<std::pair<std::string, std::vector<char> > > getStringTables() override;
 
@@ -64,6 +64,8 @@ public:
 
     std::unordered_map<std::string, std::pair<std::string, std::vector<std::pair<std::string, Elf64_Rela> > > >
     getRelaTables64() override;
+
+    std::vector<Elf64_Phdr> getProgramHeaders64() override;
 };
 
 

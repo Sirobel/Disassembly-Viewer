@@ -149,11 +149,12 @@ void textviewer::openFile(const QString &filePath) {
         std::cout << "finished memBar in " << duration.count() << std::endl;
         sectionTime = std::chrono::high_resolution_clock::now();
 
-        fileInfo->setSectionNames(elf->getSectionNames());
+        fileInfo->setSectionNames(elf->getSections64());
         fileInfo->setStringTables(elf->getStringTables());
         fileInfo->setSymbolTables(elf->getSymbolTablesElf64());
         fileInfo->setElfHeader(elf->getElf64Header());
         fileInfo->setRelocations(elf->getRelaTables64());
+        fileInfo->setProgramHeaders(elf->getProgramHeaders64());
 
 
         const std::chrono::duration<double, std::milli> ms = clock::now() - start;
@@ -194,22 +195,6 @@ void textviewer::toggleSearchbar() {
         ui->searchLineEdit->setFocus();
     } else
         ui->searchGroupBox->hide();
-}
-
-int textviewer::countSearchResults(const QString &text) {
-    if (text.isEmpty())
-        return 0;
-
-    //TODO
-    QString content = 0;
-    int count = 0;
-    int pos = 0;
-
-    while ((pos = content.indexOf(text, pos, Qt::CaseInsensitive)) != -1) {
-        count++;
-        pos += text.length();
-    }
-    return count;
 }
 
 

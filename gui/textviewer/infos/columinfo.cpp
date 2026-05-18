@@ -30,9 +30,9 @@ void columinfo::setDisplayInfo(const int index) {
     }
 }
 
-void columinfo::setSectionNames(const QVector<QString> &names) {
-    sectionHeaderRow.clear();
-    sectionHeaderRow = names;
+void columinfo::setSection(const QVector<QPair<QString, Elf64_Shdr> > &data) {
+    sectionHeaders.clear();
+    sectionHeaders = data;
 }
 
 void columinfo::setElfHeader(const Elf64_Ehdr &header) {
@@ -159,13 +159,105 @@ void columinfo::showHeaderInfo() {
     update();
 }
 
+static constexpr std::pair<uint64_t, const char *> flagNames[] = {
+    {SHF_WRITE, "Writable"},
+    {SHF_ALLOC, "Allocated during execution"},
+    {SHF_EXECINSTR, "Executable"},
+    {SHF_MERGE, "Might be merged"},
+    {SHF_STRINGS, "Contains nul-terminated strings"},
+    {SHF_INFO_LINK, "Info contains SHT index"},
+    {SHF_LINK_ORDER, "Preserve order after combining"},
+    {SHF_OS_NONCONFORMING, "Non standard OS specific handling"},
+    {SHF_GROUP, "Member of a group"},
+    {SHF_TLS, "Thread local data"},
+    {SHF_COMPRESSED, "Compressed"},
+    {SHF_MASKOS, "OS specific"},
+    {SHF_MASKPROC, "Processor specific"},
+    {SHF_GNU_RETAIN, "Not to be GCed by linker"},
+    {SHF_ORDERED, "Specific ordering required"},
+    {SHF_EXCLUDE, "Section is excluded unless referenced or allocated"},
+};
+
+
 void columinfo::showSectionInfo() {
     ui->tableWidget->setColumnCount(static_cast<int>(sectionHeaderColumn.size()));
-    ui->tableWidget->setRowCount(static_cast<int>(sectionHeaderRow.size()));
+    ui->tableWidget->setRowCount(static_cast<int>(sectionHeaders.size()));
     ui->tableWidget->setHorizontalHeaderLabels(sectionHeaderColumn);
 
+    QVector<QStringList> rows;
+    rows.reserve(sectionHeaders.size());
+    for (const auto &[name, header]: sectionHeaders) {
+        QStringList list;
+        list.append(name);
+        list.append([header] {
+            switch (header.sh_type) {
+                case SHT_NULL:
+                    return "section Header table entry";
+                case SHT_PROGBITS:
+                    return "Program data";
+                case SHT_SYMTAB:
+                    return "Symbol table";
+                case SHT_STRTAB:
+                    return "string table";
+                case SHT_RELA:
+                    return "Relocation table with addends";
+                case SHT_HASH:
+                    return "Symbol hash table";
+                case SHT_DYNAMIC:
+                    return "Dynamic linking information";
+                case SHT_NOTE:
+                    return "Notes";
+                case SHT_NOBITS:
+                    return "Program space with no data";
+                case SHT_REL:
+                    return "relocation table with no addends";
+                case SHT_SHLIB:
+                    return "reserved";
+                case SHT_DYNSYM:
+                    return "Dynamic linker symbol table";
+                case SHT_INIT_ARRAY:
+                    return "Array of constructors";
+                case SHT_FINI_ARRAY:
+                    return "Array of destructors";
+                case SHT_PREINIT_ARRAY:
+                    return "Array of pre-constructors";
+                case SHT_GROUP:
+                    return "Section group";
+                case SHT_SYMTAB_SHNDX:
+                    return "Extended section indices";
+                case SHT_RELR:
+                    return "RELR relative relocations";
+                default:
+                    if (header.sh_type >= SHT_LOOS && header.sh_type <= SHT_HIOS)
+                        return "OS-specific";
+                    if (header.sh_type >= SHT_LOPROC && header.sh_type <= SHT_HIPROC)
+                        return "Processor specific";
+                    if (header.sh_type >= SHT_LOUSER && header.sh_type <= SHT_HIUSER)
+                        return "Application specific";
+                    return "unknown";
+            }
+        }());
+        QString flag;
+        for (const auto &[bits, FlagName]: flagNames)
+            if (header.sh_flags & bits)
+                flag += QString("%1\n").arg(FlagName);
+
+        list.append(flag);
+        list.append(QString::number(header.sh_addr));
+        list.append(QString::number(header.sh_offset));
+        list.append(QString::number(header.sh_size));
+        list.append(QString::number(header.sh_link));
+        list.append(QString::number(header.sh_info));
+        list.append(QString::number(header.sh_addralign));
+        list.append(QString::number(header.sh_entsize));
+
+        rows.append(list);
+    }
+
     for (int i = 0; i < ui->tableWidget->rowCount(); i++) {
-        ui->tableWidget->setItem(i, 0, new QTableWidgetItem(sectionHeaderRow[i]));
+        for (int j = 0; j < sectionHeaderColumn.size(); j++) {
+            ui->tableWidget->setItem(i, j, new QTableWidgetItem(rows[i][j]));
+        }
     }
     update();
 }

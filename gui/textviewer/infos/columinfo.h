@@ -24,7 +24,7 @@ public:
 
     void setDisplayInfo(int index);
 
-    void setSectionNames(const QVector<QString> &names);
+    void setSection(const QVector<QPair<QString, Elf64_Shdr> > &data);
 
     void setElfHeader(const Elf64_Ehdr &header);
 
@@ -47,11 +47,14 @@ private:
         "ELF header size", "PHeader table size", "PHeader entries", "SHeader table size", "SHeader entries",
         "string table index"
     };
-    Elf64_Ehdr fileHeader;
+    Elf64_Ehdr fileHeader{};
 
 
-    QVector<QString> sectionHeaderColumn = {"Name"};
-    QVector<QString> sectionHeaderRow = {};
+    QVector<QString> sectionHeaderColumn = {
+        "Name", "Type", "Flags", "Virtual address", "File offset", "Section size", "Link", "Additional section info",
+        "Section alignment", "Entry size"
+    };
+    QVector<QPair<QString, Elf64_Shdr> > sectionHeaders;
 };
 
 

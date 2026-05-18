@@ -30,6 +30,9 @@ void treeinfo::setDisplayInfo(const int index) {
         case 4:
             showRelocationTables();
             break;
+        case 5:
+            showProgramTable();
+            break;
         default:
             break;
     }
@@ -47,21 +50,24 @@ void treeinfo::setRelocationTable(const QHash<QString, QPair<QString, QList<QPai
     relocationTables = tables;
 }
 
+void treeinfo::setProgramHeader(const QVector<Elf64_Phdr> &data) {
+    programHeaders = data;
+}
+
+void treeinfo::setSections(const QVector<QPair<QString, Elf64_Shdr> > &data) {
+    sections = data;
+}
+
 void treeinfo::showStringTables() {
     ui->treeWidget->setColumnCount(static_cast<int>(stringTableColumn.count()));
     ui->treeWidget->setHeaderLabels(stringTableColumn);
 
     for (const auto &[section, strings]: stringTables.asKeyValueRange()) {
-        auto item = std::make_unique<QTreeWidgetItem>(QStringList{section});
+        auto item = new QTreeWidgetItem(ui->treeWidget, QStringList{section});
 
         for (const auto &string: strings) {
-            auto child = std::make_unique<QTreeWidgetItem>(QStringList{string});
-            item->addChild(child.get());
-            [[maybe_unused]] auto b = child.release();
+            new QTreeWidgetItem(item, QStringList{string});
         }
-
-        ui->treeWidget->addTopLevelItem(item.get());
-        [[maybe_unused]] auto a = item.release();
     }
 }
 
@@ -70,7 +76,7 @@ void treeinfo::showSymbolTables() {
     ui->treeWidget->setHeaderLabels(symbolTableColumn);
 
     for (const auto &[section, strings]: symbolTables.asKeyValueRange()) {
-        auto item = std::make_unique<QTreeWidgetItem>(QStringList{section});
+        auto item = new QTreeWidgetItem(ui->treeWidget, QStringList{section});
         for (const auto &[string,symbol]: strings) {
             QStringList names = {string};
 
@@ -138,14 +144,8 @@ void treeinfo::showSymbolTables() {
                 }
             }());
 
-
-            auto child = std::make_unique<QTreeWidgetItem>(names);
-            item->addChild(child.get());
-            [[maybe_unused]] auto b = child.release();
+            new QTreeWidgetItem(item, names);
         }
-
-        ui->treeWidget->addTopLevelItem(item.get());
-        [[maybe_unused]] auto a = item.release();
     }
 }
 
@@ -154,9 +154,8 @@ void treeinfo::showRelocationTables() {
     ui->treeWidget->setHeaderLabels(relocationTableColumn);
 
     for (const auto &[section, strings]: relocationTables.asKeyValueRange()) {
-        auto item = std::make_unique<QTreeWidgetItem>(QStringList{section});
-        auto symbolTable = std::make_unique<QTreeWidgetItem>(QStringList{strings.first});
-        item->addChild(symbolTable.get());
+        auto item = new QTreeWidgetItem(ui->treeWidget, QStringList{section});
+        auto symbolTable = new QTreeWidgetItem(item, QStringList{strings.first});
 
         for (const auto &[string, rela]: strings.second) {
             QStringList names = {string};
@@ -255,13 +254,87 @@ void treeinfo::showRelocationTables() {
             names.append(QString::number(ELF64_R_SYM(rela.r_info)));
             names.append(QString::number(rela.r_offset));
 
-            auto child = std::make_unique<QTreeWidgetItem>(names);
-            symbolTable->addChild(child.get());
-            [[maybe_unused]] auto b = child.release();
+            new QTreeWidgetItem(symbolTable, names);
         }
+    }
+}
 
-        ui->treeWidget->addTopLevelItem(item.get());
-        [[maybe_unused]] auto a = item.release();
-        [[maybe_unused]] auto b = symbolTable.release();
+void treeinfo::showProgramTable() {
+    ui->treeWidget->setColumnCount(static_cast<int>(programHeaderColumn.count()));
+    ui->treeWidget->setHeaderLabels(programHeaderColumn);
+
+    for (const auto &header: programHeaders) {
+        QStringList names;
+        names.append([&] {
+            switch (header.p_type) {
+                case PT_NULL:
+                    return "Table entry";
+                case PT_LOAD:
+                    return "Loadable";
+                case PT_DYNAMIC:
+                    return "Dynamic linking information";
+                case PT_INTERP:
+                    return "Interpreter";
+                case PT_NOTE:
+                    return "Auxiliary information";
+                case PT_SHLIB:
+                    return "Reserved";
+                case PT_PHDR:
+                    return "Entry for header Table";
+                case PT_TLS:
+                    return "Thread-local storage";
+                default:
+                    if (header.p_type >= PT_LOOS && header.p_type <= PT_HIOS) {
+                        switch (header.p_type) {
+                            case PT_GNU_EH_FRAME:
+                                return "OS specific GCC .eh_frame_hdr";
+                            case PT_GNU_STACK:
+                                return "OS specific stack executability";
+                            case PT_GNU_RELRO:
+                                return "OS specific read-only relocation";
+                            case PT_GNU_PROPERTY:
+                                return "OS specific GNU property";
+                            case PT_GNU_SFRAME:
+                                return "OS specific SFrame";
+                            default:
+                                return "OS specific";
+                        }
+                    }
+                    if (header.p_type >= PT_LOPROC && header.p_type <= PT_HIPROC) {
+                        return "Processor specific";
+                    }
+                    return "unknown";
+            }
+        }());
+        QString flags;
+        if (header.p_flags & PF_X)
+            flags += "Executable\n";
+        if (header.p_flags & PF_W)
+            flags += "Writable\n";
+        if (header.p_flags & PF_R)
+            flags += "Readable\n";
+        if (header.p_flags & PF_MASKOS)
+            flags += "OS specific\n";
+        if (header.p_flags & PF_MASKPROC)
+            flags += "Processor specific\n";
+        names.append(flags);
+        names.append(QString::number(header.p_offset));
+        names.append(QString::number(header.p_vaddr));
+        names.append(QString::number(header.p_paddr));
+        names.append(QString::number(header.p_filesz));
+        names.append(QString::number(header.p_memsz));
+        names.append(QString::number(header.p_align));
+
+        auto item = new QTreeWidgetItem(ui->treeWidget, names);
+        for (const auto &[sName,section]: sections) {
+            if (SHT_NOBITS != section.sh_type && section.sh_offset >= header.p_offset
+                && (section.sh_offset + section.sh_size) <= header.p_offset + header.p_filesz) {
+                new QTreeWidgetItem(item, QStringList{sName});
+            } else if (SHT_NOBITS == section.sh_type && (section.sh_addr >= header.p_vaddr
+                                                         && (section.sh_addr + section.sh_size) <= (
+                                                             header.p_vaddr + header.p_memsz))) {
+                new QTreeWidgetItem(item, QStringList{sName});
+            }
+        }
     }
 }

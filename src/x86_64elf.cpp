@@ -206,14 +206,14 @@ std::vector<std::pair<uint64_t, std::string> > x86_64elf::getSectionHeadersNames
     return names;
 }
 
-std::vector<std::string> x86_64elf::getSectionNames() {
-    std::vector<std::string> names;
+std::vector<std::pair<std::string, Elf64_Shdr> > x86_64elf::getSections64() {
+    std::vector<std::pair<std::string, Elf64_Shdr> > data;
 
     for (const auto &section: sectionHeaders) {
-        names.emplace_back(&stringTable[section.sh_name]);
+        data.emplace_back(&stringTable[section.sh_name], section);
     }
 
-    return names;
+    return data;
 }
 
 std::vector<std::pair<std::string, std::vector<char> > > x86_64elf::getStringTables() {
@@ -260,6 +260,10 @@ x86_64elf::getRelaTables64() {
     }
 
     return erg;
+}
+
+std::vector<Elf64_Phdr> x86_64elf::getProgramHeaders64() {
+    return programHeaders;
 }
 
 std::vector<uint8_t> x86_64elf::getSection(const std::string &sectionName) {

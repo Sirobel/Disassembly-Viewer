@@ -29,7 +29,7 @@ public:
 
     void changeWidget(int index);
 
-    void setSectionNames(const std::vector<std::string> &names);
+    void setSectionNames(const std::vector<std::pair<std::string, Elf64_Shdr> > &data);
 
     void setStringTables(const std::vector<std::pair<std::string, std::vector<char> > > &tables);
 
@@ -40,14 +40,16 @@ public:
     void setRelocations(
         const std::unordered_map<std::string, std::pair<std::string, std::vector<std::pair<std::string,
             Elf64_Rela> > > > &tables);
+    void setProgramHeaders(const std::vector<Elf64_Phdr> &data);
 
 private:
     Ui::fileinfo *ui;
     columinfo *columInfo;
     treeinfo *treeInfo;
-    Elf64_Ehdr elfHeader;
+    Elf64_Ehdr elfHeader{};
 
-    QVector<QString> sectionNames;
+    QVector<QPair<QString, Elf64_Shdr> > sections;
+    QVector<Elf64_Phdr> programHeaders;
     QHash<QString, QVector<QString> > stringTables;
     QHash<QString, QList<QPair<QString, Elf64_Sym> > > symbol64Tables;
     QHash<QString, QPair<QString, QList<QPair<QString, Elf64_Rela> > > > relocation64Tables;
