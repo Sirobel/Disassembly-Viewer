@@ -138,10 +138,64 @@ static bool instructionMatches(const DisasmModel::Instruction &insn, const QStri
 }
 
 QModelIndex DisasmModel::findNext(const QString &text, const QModelIndex &from) {
+    if (text.isEmpty() || sections.isEmpty())
+        return {};
+
+    int sec = -1, func = -1, insn = -1;
+    if (from.isValid())
+        decodeId(from.internalId(), sec, func, insn);
+
+    for (int s = (sec >= 0) ? sec : 0; s < sections.size(); ++s) {
+        const auto &[SName, functions] = sections[s];
+        if (s > sec || (func == -1 && insn == -1))
+            if ((sec == -1 || s > sec) && SName.contains(text, Qt::CaseInsensitive))
+                return createIndex(s, 0, encodeId(s, -1, -1));
+
+        for (int f = (s == sec && func >= 0) ? func : 0; f < functions.size(); ++f) {
+            const auto &[fName, instructions] = functions[f];
+            if (f > func || (f == func && s > sec))
+                if (fName.contains(text, Qt::CaseInsensitive))
+                    return createIndex(f, 0, encodeId(s, f, -1));
+
+            for (int i = (s == sec && f == func && insn >= 0) ? insn + 1 : 0; i < instructions.size(); ++i) {
+                if (instructionMatches(instructions[i], text))
+                    return createIndex(i, 0, encodeId(s, f, i));
+            }
+        }
+    }
+
     return {};
 }
 
 QModelIndex DisasmModel::findPrev(const QString &text, const QModelIndex &from) {
+    if (text.isEmpty() || sections.isEmpty())
+        return {};
+
+    int sec = -1, func = -1, insn = -1;
+    if (from.isValid())
+        decodeId(from.internalId(), sec, func, insn);
+
+    for (int s = (sec >= 0) ? sec : static_cast<int>(sections.size()) - 1; s >= 0; --s) {
+        const auto &[SName, functions] = sections[s];
+
+        for (int f = (func >= -1 && sec == s) ? func : static_cast<int>(functions.size()) - 1; f >= 0; --f) {
+            const auto &[fName, instructions] = functions[f];
+            for (int i = (insn >= -1 && sec == s && func == f) ? insn - 1 : static_cast<int>(instructions.size()) - 1;
+                 i >= 0; --i) {
+                if (instructionMatches(instructions[i], text))
+                    return createIndex(i, 0, encodeId(s, f, i));
+            }
+
+            if (!(s == sec && f == func && insn == -1))
+                if (fName.contains(text, Qt::CaseInsensitive))
+                    return createIndex(f, 0, encodeId(s, f, -1));
+        }
+
+        if (!(s == sec && func == -1 && insn == -1))
+            if (SName.contains(text, Qt::CaseInsensitive))
+                return createIndex(s, 0, encodeId(s, -1, -1));
+    }
+
     return {};
 }
 
