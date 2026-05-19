@@ -115,6 +115,8 @@ x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
         }
         std::cout << "end " << std::endl;
     }
+
+    addDecorations();
 }
 
 void x86_64elf::handeFileError(const std::string &errMsg) {
@@ -191,6 +193,15 @@ void x86_64elf::createSymbolTables() {
 
                 symbolAddressTable[relocation.r_offset] = demangler->demangle(&stringTables[strtabIndex][syms.st_name]);
             }
+        }
+    }
+}
+
+void x86_64elf::addDecorations() {
+    for (const auto &section: sectionHeaders) {
+        if (!symbolAddressTable.contains(section.sh_addr)) {
+            symbolAddressTable[section.sh_addr] = &stringTable[section.sh_name];
+            symbolAddressTable[section.sh_addr] += "@deco";
         }
     }
 }

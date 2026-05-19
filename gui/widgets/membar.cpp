@@ -27,8 +27,25 @@ membar::membar(QWidget *parent) : QWidget(parent), ui(new Ui::membar), settings(
 
     setMouseTracking(true);
     connect(&hoverTimer, &QTimer::timeout, this, [this]() {
-        if (hoverIndex != -1 && drawTarget != -1) {
-            QToolTip::showText(mapToGlobal(mousePos), sectionHeaders[drawTarget][hoverIndex].name, this);
+        if (hoverIndex == -1)
+            return;
+
+        if (drawTarget != -1) {
+            QToolTip::showText(mapToGlobal(mousePos),
+                               sectionHeaders[drawTarget][hoverIndex].name + " at 0x" + QString::number(
+                                   sectionHeaders[drawTarget][hoverIndex].addr, 16), this);
+        } else {
+            int target = -1;
+            for (int i = 0; i < programHeadersRects.size(); ++i) {
+                if (programHeadersRects[i].contains(mousePos)) {
+                    target = i;
+                    break;
+                }
+            }
+            if (target != -1)
+                QToolTip::showText(mapToGlobal(mousePos),
+                                   sectionHeaders[target][hoverIndex].name + " at 0x" + QString::number(
+                                       sectionHeaders[target][hoverIndex].addr, 16), this);
         }
     });
 }
@@ -128,19 +145,27 @@ void membar::mousePressEvent(QMouseEvent *event) {
 }
 
 void membar::mouseMoveEvent(QMouseEvent *event) {
-    if (drawTarget == -1)
-        return;
-
     const QPointF pos = event->pos();
     int newHover = -1;
 
-    for (int i = 0; i < programHeadersRects.size(); ++i) {
-        if (programHeadersRects[i].contains(pos)) {
-            newHover = i;
-            mousePos = event->pos();
-            break;
+    if (drawTarget == -1) {
+        for (int i = 0; i < sectionHeadersRects.size(); ++i) {
+            if (sectionHeadersRects[i].second.contains(pos)) {
+                newHover = sectionHeadersRects[i].first;
+                mousePos = event->pos();
+                break;
+            }
+        }
+    } else {
+        for (int i = 0; i < programHeadersRects.size(); ++i) {
+            if (programHeadersRects[i].contains(pos)) {
+                newHover = i;
+                mousePos = event->pos();
+                break;
+            }
         }
     }
+
 
     if (newHover != hoverIndex) {
         hoverIndex = newHover;
@@ -162,6 +187,7 @@ void membar::drawAll() {
     painter.setFont(QFont("Arial", fontSize, QFont::Bold));
 
     programHeadersRects.clear();
+    sectionHeadersRects.clear();
 
 
     const double scale = width() / static_cast<double>(maxSize);
@@ -194,12 +220,15 @@ void membar::drawAll() {
         painter.setBrush(Qt::NoBrush);
         painter.drawRect(rec);
 
+        int count = 0;
         for (const auto &segment: sectionHeaders[i]) {
             painter.setPen(QPen(borderColor, borderSize));
             if (borderSize <= 0)
                 painter.setPen(Qt::NoPen);
             auto secRec = QRectF(x + static_cast<double>(segment.addr - programHeaders[i].addr) * sectionScale, 0,
                                  static_cast<double>(segment.size) * sectionScale, height());
+            sectionHeadersRects.emplaceBack(count, secRec);
+
             painter.setBrush(colors[i]);
             painter.drawRect(secRec);
 
@@ -208,6 +237,7 @@ void membar::drawAll() {
                 painter.setPen(fontColor);
                 painter.drawText(secRec, Qt::AlignCenter, segment.name);
             }
+            count++;
         }
 
         programHeadersRects.push_back(rec);

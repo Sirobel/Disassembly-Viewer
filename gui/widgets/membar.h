@@ -52,6 +52,7 @@ private:
     std::vector<Segment> programHeaders;
     std::vector<std::vector<Segment> > sectionHeaders;
     QVector<QRectF> programHeadersRects;
+    QVector<QPair<int,QRectF>> sectionHeadersRects;
     QVector<QColor> colors;
     int drawTarget;
     uint64_t maxSize;

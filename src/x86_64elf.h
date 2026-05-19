@@ -36,6 +36,8 @@ private:
 
     void createSymbolTables();
 
+    void addDecorations();
+
 public:
     ~x86_64elf() override;
 
