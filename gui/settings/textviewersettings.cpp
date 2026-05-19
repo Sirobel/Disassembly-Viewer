@@ -27,7 +27,7 @@ void textviewersettings::loadSettings() {
         settings.value("sections", QStringList{".init", ".plt", ".plt.got", ".plt.sec", ".text", ".fini"}).
         toStringList());
 
-    addColorsToMemBarList(settings.value("memBarColors").toStringList());
+    addColorsToMemBarList(settings.value("memBarColors",QStringList{"#5B2D8E","#9B4DCA","#9B4DCA","#1F4068","#2E6B5E","#C0392B"}).toStringList());
     ui->memBarTextColorLineEdit->setText(settings.value("memBarTextColor","#ffffff").toString());
     ui->memBarBorderColorLineEdit->setText(settings.value("memBarBorderColor","#000000").toString());
     ui->memBarFontSizeSpinBox->setValue(settings.value("memBarFontSize",10).toInt());
