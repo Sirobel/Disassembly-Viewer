@@ -55,8 +55,8 @@ private:
     QHash<QString, QPair<QString, QList<QPair<QString, Elf64_Rela> > > > relocation64Tables;
 
     QVector<QString> commands = {
-        "readelf -h <file>", "objdump -t <file>", "objdump -j <stringTable> <file>",
-        "objdump -j <symbolTable> <file>", "objdump -r <file>"
+        "readelf -h <file>", "readelf -S <file>", "objdump -j <stringTable> <file>",
+        "objdump -j <symbolTable> <file>", "objdump -r <file>","readelf -l <file>"
     };
 };
 

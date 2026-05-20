@@ -10,6 +10,7 @@
 
 std::string x86_64Disasm::disassemblePart(const std::vector<uint8_t> &machineCode, uint64_t startingAddress) {
     std::string out;
+    //TODO remove register comments
 
 
     csh handle;
