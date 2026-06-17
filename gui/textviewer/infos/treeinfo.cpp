@@ -63,7 +63,7 @@ void treeinfo::showStringTables() {
     ui->treeWidget->setHeaderLabels(stringTableColumn);
 
     for (const auto &[section, strings]: stringTables.asKeyValueRange()) {
-        auto item = new QTreeWidgetItem(ui->treeWidget, QStringList{section});
+        const auto item = new QTreeWidgetItem(ui->treeWidget, QStringList{section});
 
         for (const auto &string: strings) {
             new QTreeWidgetItem(item, QStringList{string});
@@ -162,7 +162,6 @@ void treeinfo::showRelocationTables() {
             names.append(QString::number(rela.r_offset));
             names.append(QString::number(rela.r_addend));
             ////for later in the elf.h under /* AMD x86-64 relocations.  */
-            names.append(QString::number(ELF64_R_TYPE(rela.r_info)));
             names.append([&] {
                 switch (ELF64_R_TYPE(rela.r_info)) {
                     case R_X86_64_NONE:
@@ -252,7 +251,6 @@ void treeinfo::showRelocationTables() {
                 }
             }());
             names.append(QString::number(ELF64_R_SYM(rela.r_info)));
-            names.append(QString::number(rela.r_offset));
 
             new QTreeWidgetItem(symbolTable, names);
         }

@@ -73,6 +73,11 @@ x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
         handeFileError("Wrong ISA");
     }
 
+    //check existens of both headers
+    if (eHdr->e_shoff == 0 || eHdr->e_phnum == 0) {
+        handeFileError("Section Header or Program Header missing");
+    }
+
     //load section headers
     sectionHeaders.resize(eHdr->e_shnum);
     currentFile.seekg(static_cast<long>(eHdr->e_shoff), std::ios::beg);
@@ -106,16 +111,6 @@ x86_64elf::x86_64elf(const std::string &path) : ElfHandler(path) {
         segmentsIndex[&stringTable[segment.sh_name]] = segment;
     }
 
-    for (const auto &[key, value]: relaTables) {
-        std::cout << "Relocations for " << &stringTable[sectionHeaders[key].sh_name] << std::endl;
-        for (const auto &rela: value) {
-            const auto syms = symbolTables[sectionHeaders[key].sh_link][ELF64_R_SYM(rela.r_info)];
-            uint32_t strtabIndex = sectionHeaders[sectionHeaders[key].sh_link].sh_link;
-            std::cout << &stringTables[strtabIndex][syms.st_name] << std::endl;
-        }
-        std::cout << "end " << std::endl;
-    }
-
     addDecorations();
 }
 
@@ -145,6 +140,7 @@ void x86_64elf::createStringTables() {
 }
 
 void x86_64elf::createSymbolTables() {
+    std::vector<int> relas;
     for (int i = 0; i < eHdr->e_shnum; ++i) {
         if (sectionHeaders[i].sh_type == SHT_SYMTAB || sectionHeaders[i].sh_type == SHT_DYNSYM) {
             std::vector<Elf64_Sym> symbols;
@@ -173,33 +169,36 @@ void x86_64elf::createSymbolTables() {
                     &stringTables[sectionHeaders[i].sh_link][symbol.st_name]);
             }
         } else if (sectionHeaders[i].sh_type == SHT_RELA) {
-            std::vector<Elf64_Rela> relocations(sectionHeaders[i].sh_size / sizeof(Elf64_Rela));
+            relas.push_back(i);
+        }
+    }
 
-            currentFile.seekg(static_cast<long>(sectionHeaders[i].sh_offset), std::ios::beg);
-            currentFile.read(reinterpret_cast<std::istream::char_type *>(relocations.data()),
-                             static_cast<long>(sectionHeaders[i].sh_size));
-            if (!currentFile.good()) {
-                handeFileError("Could not read relocations");
-            }
+    for (const auto i: relas) {
+        std::vector<Elf64_Rela> relocations(sectionHeaders[i].sh_size / sizeof(Elf64_Rela));
 
-            for (const auto &relocation: relocations) {
-                const uint32_t symIndex = ELF64_R_SYM(relocation.r_info);
-                const uint32_t type = ELF64_R_TYPE(relocation.r_info);
-                relaTables[i].emplace_back(relocation);
+        currentFile.seekg(static_cast<long>(sectionHeaders[i].sh_offset), std::ios::beg);
+        currentFile.read(reinterpret_cast<std::istream::char_type *>(relocations.data()),
+                         static_cast<long>(sectionHeaders[i].sh_size));
+        if (!currentFile.good()) {
+            handeFileError("Could not read relocations");
+        }
 
-                const auto syms = symbolTables[sectionHeaders[i].sh_link][symIndex];
-                uint32_t strtabIndex = sectionHeaders[sectionHeaders[i].sh_link].sh_link;
+        for (const auto &relocation: relocations) {
+            const uint32_t symIndex = ELF64_R_SYM(relocation.r_info);
+            relaTables[i].emplace_back(relocation);
+
+            const auto syms = symbolTables[sectionHeaders[i].sh_link][symIndex];
+            uint32_t strtabIndex = sectionHeaders[sectionHeaders[i].sh_link].sh_link;
 
 
-                symbolAddressTable[relocation.r_offset] = demangler->demangle(&stringTables[strtabIndex][syms.st_name]);
-            }
+            symbolAddressTable[relocation.r_offset] = demangler->demangle(&stringTables[strtabIndex][syms.st_name]);
         }
     }
 }
 
 void x86_64elf::addDecorations() {
     for (const auto &section: sectionHeaders) {
-        if (!symbolAddressTable.contains(section.sh_addr)) {
+        if (section.sh_addr != 0 && !symbolAddressTable.contains(section.sh_addr)) {
             symbolAddressTable[section.sh_addr] = &stringTable[section.sh_name];
             symbolAddressTable[section.sh_addr] += "@deco";
         }
@@ -227,12 +226,28 @@ std::vector<std::pair<std::string, Elf64_Shdr> > x86_64elf::getSections64() {
     return data;
 }
 
-std::vector<std::pair<std::string, std::vector<char> > > x86_64elf::getStringTables() {
-    std::vector<std::pair<std::string, std::vector<char> > > erg;
+std::vector<std::pair<std::string, std::vector<std::string> > > x86_64elf::getStringTables() {
+    std::vector<std::pair<std::string, std::vector<std::string> > > erg;
 
     for (const auto &[index,data]: stringTables) {
+        std::vector<std::string> table;
+
+        auto it = data.begin();
+        while (it != data.end()) {
+            auto end = std::find(it, data.end(), '\0');
+            auto sym = std::string(it, end);
+            auto demangle = demangler->demangle(sym);
+            if (demangle != sym)
+                demangle += "; " + sym;
+
+            table.emplace_back(demangle);
+            if (end == data.end()) {
+                break;
+            }
+            it = end + 1;
+        }
         std::string test = &stringTable[sectionHeaders[index].sh_name];
-        erg.emplace_back(test, data);
+        erg.emplace_back(test, table);
     }
 
     return erg;
@@ -243,8 +258,12 @@ std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > x86_64e
 
     for (const auto &[index,data]: symbolTables) {
         for (const auto &symbol: data) {
+            std::string sym = &stringTables[sectionHeaders[index].sh_link][symbol.st_name];
+            auto demangle = demangler->demangle(sym);
+            if (demangle != sym)
+                demangle += "; " + sym;
             symbols.emplace_back(&stringTable[sectionHeaders[index].sh_name],
-                                 std::make_pair(&stringTables[sectionHeaders[index].sh_link][symbol.st_name], symbol));
+                                 std::make_pair(demangle, symbol));
         }
     }
 
@@ -265,7 +284,13 @@ x86_64elf::getRelaTables64() {
         for (const auto &symbol: data) {
             const auto syms = symbolTables[sectionHeaders[index].sh_link][ELF64_R_SYM(symbol.r_info)];
             uint32_t strtabIndex = sectionHeaders[sectionHeaders[index].sh_link].sh_link;
-            list.emplace_back(&stringTables[strtabIndex][syms.st_name], symbol);
+
+            std::string sym = &stringTables[strtabIndex][syms.st_name];
+            auto demangle = demangler->demangle(sym);
+            if (demangle != sym)
+                demangle += "; " + sym;
+
+            list.emplace_back(demangle, symbol);
         }
         erg[table] = std::make_pair(&stringTable[sectionHeaders[sectionHeaders[index].sh_link].sh_name], list);
     }

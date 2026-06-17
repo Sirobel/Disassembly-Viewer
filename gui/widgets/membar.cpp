@@ -58,6 +58,8 @@ void membar::initializeBar(const std::vector<std::vector<Segment> > &secHeader,
                            const std::vector<Segment> &progHeader) {
     maxSize = 0;
     drawTarget = -1;
+    hoverIndex = -1;
+    hoverTimer.stop();
     programHeaders = progHeader;
     sectionHeaders = secHeader;
     colors.clear();
@@ -83,6 +85,9 @@ void membar::initializeBar(const std::vector<std::vector<Segment> > &secHeader,
 
 void membar::refresh() {
     colors.clear();
+    drawTarget = -1;
+    hoverIndex = -1;
+    hoverTimer.stop();
 
     for (QStringList colorList = settings.value("memBarColors").toStringList(); const auto &c: colorList) {
         colors.push_back(QColor(c));
@@ -116,10 +121,17 @@ void membar::refresh() {
 }
 
 void membar::paintEvent(QPaintEvent *event) {
+    using clock = std::chrono::high_resolution_clock;
+    auto sectionTime = std::chrono::high_resolution_clock::now();
+    std::cout << "start MembarPaintEvent" << std::endl;
+
     if (drawTarget == -1)
         drawAll();
     else
         drawSectionHeaders();
+
+    std::chrono::duration<double, std::milli> duration = clock::now() - sectionTime;
+    std::cout << "finished MembarPaintEvent in " << duration.count() << std::endl;
 }
 
 void membar::mousePressEvent(QMouseEvent *event) {

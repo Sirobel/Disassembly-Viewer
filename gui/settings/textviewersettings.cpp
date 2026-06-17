@@ -23,10 +23,12 @@ void textviewersettings::loadSettings() {
         static_cast<Qt::CheckState>(settings.value("linkUnderscore", Qt::Checked).toInt())
     );
     ui->fontSizeSpinBox->setValue(settings.value("fontSize",12).toInt());
+    ui->sectionListWidget->clear();
     ui->sectionListWidget->addItems(
         settings.value("sections", QStringList{".init", ".plt", ".plt.got", ".plt.sec", ".text", ".fini"}).
         toStringList());
 
+    ui->colorListWidget->clear();
     addColorsToMemBarList(settings.value("memBarColors",QStringList{"#5B2D8E","#9B4DCA","#9B4DCA","#1F4068","#2E6B5E","#C0392B"}).toStringList());
     ui->memBarTextColorLineEdit->setText(settings.value("memBarTextColor","#ffffff").toString());
     ui->memBarBorderColorLineEdit->setText(settings.value("memBarBorderColor","#000000").toString());

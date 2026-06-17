@@ -19,9 +19,6 @@ public:
 
     QVector<DisasmModel::Function> disassemblePartToSections(const std::vector<uint8_t> &machineCode,
                                                         uint64_t startingAddress) const override;
-
-private:
-    std::string baseUrl = "https://www.felixcloutier.com/x86/";
 };
 
 

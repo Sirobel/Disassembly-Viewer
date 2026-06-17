@@ -58,7 +58,7 @@ public:
 
     std::vector<std::pair<std::string, Elf64_Shdr> > getSections64() override;
 
-    std::vector<std::pair<std::string, std::vector<char> > > getStringTables() override;
+    std::vector<std::pair<std::string, std::vector<std::string> > > getStringTables() override;
 
     std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > getSymbolTablesElf64() override;
 

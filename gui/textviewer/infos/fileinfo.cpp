@@ -6,7 +6,8 @@
 
 #include "fileinfo.h"
 
-#include <qscreen_platform.h>
+#include <iostream>
+#include <chrono>
 
 #include "ui_fileinfo.h"
 #include "columinfo.h"
@@ -26,6 +27,10 @@ fileinfo::~fileinfo() {
 }
 
 void fileinfo::changeWidget(const int index) {
+    using clock = std::chrono::high_resolution_clock;
+    auto sectionTime = std::chrono::high_resolution_clock::now();
+    std::cout << "start FileInfoDisplay" << std::endl;
+
     ui->commandLabel->setText(commands.value(index, "unknown"));
 
     if (index == 0 || index == 1) {
@@ -45,6 +50,9 @@ void fileinfo::changeWidget(const int index) {
         treeInfo->setDisplayInfo(index);
         ui->stackedWidget->setCurrentWidget(treeInfo);
     }
+
+    std::chrono::duration<double, std::milli> duration = clock::now() - sectionTime;
+    std::cout << "finished FileInfoDisplay in " << duration.count() << std::endl;
 }
 
 void fileinfo::setSectionNames(const std::vector<std::pair<std::string, Elf64_Shdr> > &data) {
@@ -55,22 +63,14 @@ void fileinfo::setSectionNames(const std::vector<std::pair<std::string, Elf64_Sh
     }
 }
 
-void fileinfo::setStringTables(const std::vector<std::pair<std::string, std::vector<char> > > &tables) {
+void fileinfo::setStringTables(const std::vector<std::pair<std::string, std::vector<std::string> > > &tables) {
     stringTables.clear();
 
     for (const auto &[section,data]: tables) {
         QVector<QString> table;
-
-        auto it = data.begin();
-        while (it != data.end()) {
-            auto end = std::find(it, data.end(), '\0');
-            table.emplace_back(QString::fromStdString(std::string(it, end)));
-            if (end == data.end()) {
-                break;
-            }
-            it = end + 1;
+        for (auto &s:data) {
+            table.append(QString::fromStdString(s));
         }
-
         stringTables[QString::fromStdString(section)].append(table);
     }
 }

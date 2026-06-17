@@ -34,7 +34,7 @@ private:
     QStackedWidget *stack;
     textviewer *textViewer;
     recentfiles *recentFiles;
-    mainsettings *settings = nullptr;
+    mainsettings *settings;
 
     void setupTextViewerMenubar();
 

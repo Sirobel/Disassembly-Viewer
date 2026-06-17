@@ -40,6 +40,9 @@ private slots:
 
     void on_ApplyPushButton_clicked();
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private:
     Ui::mainsettings *ui;
 

@@ -29,6 +29,7 @@ mainsettings::mainsettings(QWidget *parent) : QWidget(parent), ui(new Ui::mainse
     }
 
     ui->stackedWidget->setCurrentIndex(0);
+
 }
 
 void mainsettings::saveSettings() {
@@ -66,4 +67,9 @@ void mainsettings::on_OkPushButton_clicked() {
 
 void mainsettings::on_ApplyPushButton_clicked() {
     saveSettings();
+}
+
+void mainsettings::closeEvent(QCloseEvent *event) {
+    on_CancelPushButton_clicked();
+    QWidget::closeEvent(event);
 }

@@ -11,11 +11,9 @@
 #include "ui_textviewer.h"
 #include "x86_64elf.h"
 #include <QMessageBox>
-#include "Disassembler.h"
 #include "x86_64Disasm.h"
 #include <chrono>
 #include <future>
-#include <semaphore>
 #include <QDesktopServices>
 #include <QToolTip>
 #include <QKeySequence>
@@ -82,25 +80,46 @@ void textviewer::openFile(const QString &filePath) {
 
 
         QVector<DisasmModel::Section> section;
-        x86_64Disasm disasm(*elf);
+        const x86_64Disasm disasm(*elf);
 
-        for (const auto &sec: sections) {
-            const auto data = elf->getSection(sec.toStdString());
-            section.emplace_back("Disassembly of Section " + sec,
-                                 disasm.disassemblePartToSections(data, elf->getAddressOfSegment(sec.toStdString())));
+        std::ranges::sort(sections,[this](const QString &a, const QString &b) {
+            return elf->getAddressOfSegment(a.toStdString()) < elf->getAddressOfSegment(b.toStdString());
+        });
+
+        // Step 1: read all data under the mutex (sequential, fast)
+        struct SectionRaw { QString displayName; std::vector<uint8_t> data; uint64_t addr; };
+        std::vector<SectionRaw> raw;
+        raw.reserve(sections.size());
+        for (const auto &sec : sections) {
+            raw.push_back({
+                "Disassembly of Section " + sec,
+                elf->getSection(sec.toStdString()),
+                elf->getAddressOfSegment(sec.toStdString())
+            });
         }
 
+        section.resize(static_cast<long>(raw.size()));
+        std::vector<std::future<void>> futs;
+        futs.reserve(raw.size());
+        for (int i = 0; i < static_cast<int>(raw.size()); ++i) {
+            futs.push_back(std::async(std::launch::async, [&, i] {
+                section[i] = {
+                    raw[i].displayName,
+                    disasm.disassemblePartToSections(raw[i].data, raw[i].addr)
+                };
+            }));
+        }
+        for (auto &f : futs) f.get();
 
         std::chrono::duration<double, std::milli> duration = clock::now() - sectionTime;
         std::cout << "finished disassembly in " << duration.count() << std::endl
-                << "start setHTML" << std::endl;
+                << "start SetText" << std::endl;
         sectionTime = std::chrono::high_resolution_clock::now();
 
-        //ui->textBrowser->hide();
         if (!sections.empty()) {
-            model->setSections(section);
-            ui->treeView->expandAll();
-
+            ui->treeView->setUpdatesEnabled(false);
+            model->setSections(std::move(section));
+            ui->treeView->expandToDepth(1);
 
             for (int s = 0; s < model->rowCount({}); ++s) {
                 ui->treeView->setFirstColumnSpanned(s, QModelIndex(), true);
@@ -109,12 +128,14 @@ void textviewer::openFile(const QString &filePath) {
                     ui->treeView->setFirstColumnSpanned(f, secIdx, true);
                 }
             }
+            ui->treeView->setUpdatesEnabled(true);
+
         } else
             ui->treeView->reset();
 
 
         duration = clock::now() - sectionTime;
-        std::cout << "finished setHTML in " << duration.count() << std::endl
+        std::cout << "finished setText in " << duration.count() << std::endl
                 << "start memBar" << std::endl;
         sectionTime = std::chrono::high_resolution_clock::now();
 
@@ -146,8 +167,9 @@ void textviewer::openFile(const QString &filePath) {
         ui->memBar->initializeBar(sectionBar, programBar);
 
         duration = clock::now() - sectionTime;
-        std::cout << "finished memBar in " << duration.count() << std::endl;
+        std::cout << "finished memBar in " << duration.count() << std::endl <<"start  FileInfo" << std::endl;
         sectionTime = std::chrono::high_resolution_clock::now();
+
 
         fileInfo->setSectionNames(elf->getSections64());
         fileInfo->setStringTables(elf->getStringTables());
@@ -155,6 +177,9 @@ void textviewer::openFile(const QString &filePath) {
         fileInfo->setElfHeader(elf->getElf64Header());
         fileInfo->setRelocations(elf->getRelaTables64());
         fileInfo->setProgramHeaders(elf->getProgramHeaders64());
+
+        duration = clock::now() - sectionTime;
+        std::cout << "finished FileInfo in " << duration.count() << std::endl;
 
 
         const std::chrono::duration<double, std::milli> ms = clock::now() - start;
@@ -167,13 +192,17 @@ void textviewer::openFile(const QString &filePath) {
 }
 
 void textviewer::refresh() {
-    // .arg(settings.value("linkUnderscore", Qt::Unchecked).toInt() == Qt::Checked ? "underline" : "none");
+    using clock = std::chrono::high_resolution_clock;
+    auto sectionTime = std::chrono::high_resolution_clock::now();
+    std::cout << "textviewer refresh starts" << std::endl;
     ui->memBar->refresh();
 
     QFont font = ui->treeView->font();
     font.setPointSize(settings.value("fontSize", 16).toInt());
     ui->treeView->setFont(font);
     delegate->refresh();
+    const std::chrono::duration<double, std::milli> duration = clock::now() - sectionTime;
+    std::cout << "textviewer refresh end with" <<duration<<"ms"<< std::endl;
 }
 
 void textviewer::showFileInfo(const int index) {

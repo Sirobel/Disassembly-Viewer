@@ -28,9 +28,8 @@ private:
     QSettings settings;
     QColor textColor;
     QColor linkColor;
-    bool showUnderline;
+    bool showUnderline= true;
 
-    static int getDepth(const QModelIndex &index);
 };
 
 #endif //DISASSEMBLY_VIEWER_DISASMDELEGATE_H

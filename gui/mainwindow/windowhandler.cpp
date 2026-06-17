@@ -16,6 +16,7 @@
 
 windowhandler::windowhandler(QWidget *parent) : QMainWindow(parent), ui(new Ui::windowhandler) {
     ui->setupUi(this);
+    setWindowTitle("Disassembly Viewer");
     stack = new QStackedWidget(this);
 
     textViewer = new textviewer(this);
@@ -89,12 +90,12 @@ void windowhandler::setupTextViewerMenubar() {
         textViewer->showFileInfo(5);
     });
 
-    const auto stringTableAction = infoMenu->addAction("StringTables");
+    const auto stringTableAction = infoMenu->addAction("String Tables");
     connect(stringTableAction, &QAction::triggered, [this]() {
         textViewer->showFileInfo(2);
     });
 
-    const auto symbolTableAction = infoMenu->addAction("SymbolTables");
+    const auto symbolTableAction = infoMenu->addAction("Symbol Tables");
     connect(symbolTableAction, &QAction::triggered, [this]() {
         textViewer->showFileInfo(3);
     });

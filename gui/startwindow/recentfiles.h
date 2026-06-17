@@ -30,13 +30,11 @@ public:
 
     void addFiletoList(const QString &filePath);
 
-    void setAmount(int amount);
-
     void refresh();
 
 private:
     Ui::recentfiles *ui;
-    int listAmount;
+    int listAmount = 10;
     QSettings settings;
 };
 

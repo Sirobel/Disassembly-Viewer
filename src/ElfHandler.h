@@ -59,7 +59,7 @@ public:
         return {};
     }
 
-    virtual std::vector<std::pair<std::string, std::vector<char> > > getStringTables() {
+    virtual std::vector<std::pair<std::string, std::vector<std::string> > > getStringTables() {
         return {};
     }
 
@@ -79,7 +79,7 @@ public:
 protected:
     std::unique_ptr<Demangler> demangler;
 
-    std::string demangle(const std::string &name) {
+    [[nodiscard]] std::string demangle(const std::string &name) const {
         return demangler->demangle(name);
     }
 

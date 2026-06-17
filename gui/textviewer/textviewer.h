@@ -35,6 +35,9 @@ public:
 
     void showFileInfo(int index);
 
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
+    void toggleSearchbar();
 
     ~textviewer() override;
 
@@ -70,10 +73,6 @@ private:
 
     void handleLink(const QString &link);
 
-public:
-    bool eventFilter(QObject *watched, QEvent *event) override;
-
-    void toggleSearchbar();
 };
 
 

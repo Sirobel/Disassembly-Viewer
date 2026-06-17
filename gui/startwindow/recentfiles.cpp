@@ -12,8 +12,6 @@
 recentfiles::recentfiles(QWidget *parent) : QWidget(parent), ui(new Ui::recentfiles),
                                             settings("Sirobel", "Disassembly-Viewer") {
     ui->setupUi(this);
-
-
     refresh();
 }
 
@@ -55,6 +53,6 @@ void recentfiles::refresh() {
 
     QStringList list;
     list.reserve(ui->PathListWidget->count());
-    for (int i = 0; i < ui->PathListWidget->count(); ++i) { list << ui->PathListWidget->item(i)->text(); };
+    for (int i = 0; i < ui->PathListWidget->count(); ++i) { list << ui->PathListWidget->item(i)->text(); }
     settings.setValue("recentFiles", list);
 }

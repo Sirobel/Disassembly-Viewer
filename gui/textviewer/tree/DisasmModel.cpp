@@ -64,13 +64,13 @@ QModelIndex DisasmModel::parent(const QModelIndex &child) const {
 
 int DisasmModel::rowCount(const QModelIndex &parent) const {
     if (!parent.isValid())
-        return int(sections.size());
+        return static_cast<int>(sections.size());
 
     int sec, func, insn;
     decodeId(parent.internalId(), sec, func, insn);
 
-    if (func == -1) return int(sections[sec].functions.size());
-    if (insn == -1) return int(sections[sec].functions[func].instructions.size());
+    if (func == -1) return static_cast<int>(sections[sec].functions.size());
+    if (insn == -1) return static_cast<int>(sections[sec].functions[func].instructions.size());
     return 0; // instructions have no children
 }
 
@@ -113,7 +113,10 @@ QVariant DisasmModel::data(const QModelIndex &index, int role) const {
 
 void DisasmModel::setSections(QVector<Section> data) {
     beginResetModel();
+    indexes.clear();
     sections = std::move(data);
+    endResetModel();
+
     for (int s = 0; s < sections.size(); ++s) {
         for (int f = 0; f < sections[s].functions.size(); ++f) {
             for (int i = 0; i < sections[s].functions[f].instructions.size(); ++i) {
@@ -122,7 +125,6 @@ void DisasmModel::setSections(QVector<Section> data) {
             }
         }
     }
-    endResetModel();
 }
 
 QModelIndex DisasmModel::findAddress(const QString &address) const {

@@ -5,8 +5,6 @@
 #ifndef DISASSEMBLY_VIEWER_FILEINFO_H
 #define DISASSEMBLY_VIEWER_FILEINFO_H
 
-#include <QWidget>
-#include <QHash>
 #include <textviewer/infos/columinfo.h>
 
 #include "textviewer/infos/treeinfo.h"
@@ -31,7 +29,7 @@ public:
 
     void setSectionNames(const std::vector<std::pair<std::string, Elf64_Shdr> > &data);
 
-    void setStringTables(const std::vector<std::pair<std::string, std::vector<char> > > &tables);
+    void setStringTables(const std::vector<std::pair<std::string, std::vector<std::string> > > &tables);
 
     void setSymbolTables(const std::vector<std::pair<std::string, std::pair<std::string, Elf64_Sym> > > &tables);
 

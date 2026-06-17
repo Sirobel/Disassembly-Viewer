@@ -7,7 +7,6 @@
 #include <QTreeView>
 #include <QHeaderView>
 #include <QMouseEvent>
-#include <QEvent>
 
 
 DisasmDelegate::DisasmDelegate(QTreeView *parent) : QStyledItemDelegate(parent), view(parent),
@@ -35,14 +34,4 @@ void DisasmDelegate::initStyleOption(QStyleOptionViewItem *option, const QModelI
     } else {
         option->palette.setColor(QPalette::Text, textColor);
     }
-}
-
-int DisasmDelegate::getDepth(const QModelIndex &index) {
-    int depth = 0;
-    QModelIndex p = index.parent();
-    while (p.isValid()) {
-        ++depth;
-        p = p.parent();
-    }
-    return depth;
 }

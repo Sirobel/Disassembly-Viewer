@@ -4,7 +4,6 @@
 
 #include "cppRustDemangler.h"
 
-#include <cstring>
 #include <cxxabi.h>
 #include <memory>
 #include <rustc_demangle.h>
@@ -19,12 +18,13 @@ std::string cppRustDemangler::demangle(const std::string &name) {
         if (cmp != name) return cmp;
         cmp = cppDemangle(name);
         if (cmp != name) return cmp;
-    }
-
-    if (name.starts_with("_Z")) {
         return name;
     }
-    if (std::string cmp = cppDemangle(name); strcmp(cmp.c_str(), name.c_str()) != 0) {
+
+    if (!name.starts_with("_Z")) {
+        return name;
+    }
+    if (std::string cmp = cppDemangle(name); cmp!=name) {
         return cmp;
     }
 
