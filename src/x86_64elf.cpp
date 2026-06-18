@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <format>
+#include <algorithm>
 
 #include "cppRustDemangler.h"
 
