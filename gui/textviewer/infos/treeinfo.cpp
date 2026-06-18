@@ -96,15 +96,14 @@ void treeinfo::showSymbolTables() {
                         return "common data object";
                     case STT_TLS:
                         return "thread local data object";
-                    case STT_LOOS:
-                        return "start of os-specific/ GNU indirect code object";
-                    case STT_HIOS:
-                        return "end of os-specific";
-                    case STT_LOPROC:
-                        return "start of processor-specific";
-                    case STT_HIPROC:
-                        return "end of processor-specific";
                     default:
+                        if (ELF64_ST_TYPE(symbol.st_info) >= STT_LOOS && ELF64_ST_TYPE(symbol.st_info) <= STT_HIOS) {
+                            if (ELF64_ST_TYPE(symbol.st_info)==STT_GNU_IFUNC)
+                                return "Symbol is indirect code object/Os-specific";
+                            return "Os-specific";
+                        }
+                        if (ELF64_ST_TYPE(symbol.st_info) >= STT_LOPROC && ELF64_ST_TYPE(symbol.st_info) <= STT_HIPROC)
+                            return "Processor-specific";
                         return "unknown";
                 }
             }());
@@ -117,15 +116,14 @@ void treeinfo::showSymbolTables() {
                         return "global";
                     case STB_WEAK:
                         return "weak";
-                    case STB_LOOS:
-                        return "start of OS-specific / GNU unique";
-                    case STB_HIOS:
-                        return "end of OS-specific";
-                    case STB_LOPROC:
-                        return "start of processor-specific";
-                    case STB_HIPROC:
-                        return "end of processor-specific";
                     default:
+                        if (ELF64_ST_BIND(symbol.st_info) >= STB_LOOS && ELF64_ST_BIND(symbol.st_info) <= STB_HIOS) {
+                            if (ELF64_ST_BIND(symbol.st_info)==STB_GNU_UNIQUE)
+                                return "unique/OS-specific";
+                            return "OS-specific";
+                        }
+                        if (ELF64_ST_BIND(symbol.st_info) >= STB_LOPROC && ELF64_ST_BIND(symbol.st_info) <= STB_HIPROC)
+                            return "Processor-specific";
                         return "unknown";
                 }
             }());

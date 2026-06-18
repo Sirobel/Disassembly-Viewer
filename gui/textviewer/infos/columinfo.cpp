@@ -115,15 +115,11 @@ QList<QString> columinfo::createElfHeaderValueList() {
                 return "Shared object file";
             case ET_CORE:
                 return "Core file";
-            case ET_LOOS:
-                return "OS-specific range start";
-            case ET_HIOS:
-                return "OS-specific range end";
-            case ET_LOPROC:
-                return "Processor-specific range start";
-            case ET_HIPROC:
-                return "Processor-specific range end";
             default:
+                if (fileHeader.e_type >=ET_LOOS && fileHeader.e_type <= ET_HIOS)
+                    return "OS-specific";
+                if (fileHeader.e_type >=ET_LOPROC && fileHeader.e_type <= ET_HIPROC)
+                    return "Processor-specific";
                 return "unknown";
         }
     }());
